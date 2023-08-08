@@ -5,32 +5,36 @@ import os
 from pprint import pprint
 import pyenv
 import jsonwrite as jw
+from gettoken import get_token
 pyenv.load_env()
 
 class VK_session:
-    def __init__(self):
+    def __init__(self, env = False):
         self.version = 5.131
         self.users_search = 'https://api.vk.com/method/users.search'
         self.users_get = 'https://api.vk.com/method/users.get'
-        self.access_token = os.environ['USER_TOKEN']
+        self.env = env
 
     def start(self):
+        if self.env:
+            self.id = os.environ['ID']
+            self.access_token = os.environ['USER_TOKEN']
+            return
+        
+        print('Введите ID пользователя: ')
         while True:
             try:
                 self.id = int(input())
-                self.access_token = self.take_access_token()
+                if self.id == -1: break
+
+                self.access_token = get_token(self.id)
+                if not self.access_token: raise Exception
+
+                print('Токен успешно получен!')
+                print(f'Токен: {self.access_token}')
                 break
             except:
-                print('Некорректный id!')
-
-    
-    def take_access_token(self, id):
-
-        url = f'https://oauth.vk.com/authorize?client_id=51723957&display=page&scope=photos&response_type=token&v=5.131'
-        response = requests.get(url=url).json()
-        pprint(response)
-        pass
-
+                print('Нудалось получить токен. Попробуйте другой ID или проверьте правильность введенных логина и/или пароля!')
 
     def get(self, url, **kwargs):
         params = {'access_token': self.access_token, 
@@ -51,6 +55,4 @@ class VK_session:
 
 if __name__ == '__main__':
     session = VK_session()
-    # session.start()
-    # session.test1()
-    session.take_access_token(51723957)
+    session.start()
