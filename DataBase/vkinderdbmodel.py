@@ -6,7 +6,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'user'
 
-    user_id = sq.Column(sq.Integer, primary_key=True)
+    user_id = sq.Column(sq.Integer, unique=True)
     name = sq.Column(sq.VARCHAR(length=20), nullable=False)
     second_name = sq.Column(sq.VARCHAR(length=20))
     surname = sq.Column(sq.VARCHAR(length=20), nullable=False)
@@ -23,7 +23,7 @@ class User(Base):
 class Photo(Base):
     __tablename__ = 'photo'
 
-    photo_id = sq.Column(sq.Integer, primary_key=True)
+    photo_id = sq.Column(sq.Integer, unique=True)
     url = sq.Column(sq.VARCHAR(length=100), nullable=False)
 
     def __str__(self):
