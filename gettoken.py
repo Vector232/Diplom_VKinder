@@ -1,14 +1,10 @@
 # рабочая штука, ждет пока пользователь залогинится и даст доступ, потом сразу забирает токен и закрывает браузер
 # осталось наладить вариативность для разных браузеров
 
-import os
 from selenium import webdriver
-import pyenv
 import re
 
 def get_token(id):
-    pyenv.load_env()
-   
     token = None
 
     driver = webdriver.Chrome()

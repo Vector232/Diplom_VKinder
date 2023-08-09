@@ -1,12 +1,15 @@
-import json
 import requests
-import webbrowser
 import os
 from pprint import pprint
-import pyenv
+from dotenv import load_dotenv
+# самодельные модули с нужным функционалом
+# работа с json файлами
 import jsonwrite as jw
+# получение токена вк
 from gettoken import get_token
-pyenv.load_env()
+
+
+load_dotenv()
 
 class VK_session:
     def __init__(self, env = False):
@@ -14,11 +17,12 @@ class VK_session:
         self.users_search = 'https://api.vk.com/method/users.search'
         self.users_get = 'https://api.vk.com/method/users.get'
         self.env = env
-
+    # Получаем стартовые данные от пользователя и вытаскиваем токен для дальнейшей работы.
     def start(self):
+        # для удобного тестирования
         if self.env:
-            self.id = os.environ['ID']
-            self.access_token = os.environ['USER_TOKEN']
+            self.id = os.getenv('ID')
+            self.access_token = os.getenv('USER_TOKEN')
             return
         
         print('Введите ID пользователя: ')
@@ -36,6 +40,7 @@ class VK_session:
             except:
                 print('Нудалось получить токен. Попробуйте другой ID или проверьте правильность введенных логина и/или пароля!')
 
+    # универсальная штука для коротких запросов к ППО ВК
     def get(self, url, **kwargs):
         params = {'access_token': self.access_token, 
                     'v': self.version,
