@@ -2,4 +2,5 @@ Servise
 Temp
 __pycache__
 .env
+.pyc
 idias.txt

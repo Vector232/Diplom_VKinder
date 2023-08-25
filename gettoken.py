@@ -3,28 +3,39 @@
 
 from selenium import webdriver
 import re
-
-def get_token(id):
+# https://oauth.vk.com/authorize?client_id=51723957&display=page&scope=photos&response_type=token&v=5.131
+def get_token(client_id):
     token = None
-
-    driver = webdriver.Chrome()
+    id = None
+    
+    try:
+        driver = webdriver.Chrome()
+    except:
+        try:
+            driver = webdriver.Edge()
+        except:
+            print('Не, ну это уже не серьезно!')
   
     try:
         driver.maximize_window()
-        driver.get(f'https://oauth.vk.com/authorize?client_id={id}&display=page&scope=photos&response_type=token&v=5.131')
+        driver.get(f'https://oauth.vk.com/authorize?client_id={client_id}&display=page&scope=photos&response_type=token&v=5.131')
 
         while True:
             url = driver.current_url
             if 'access_token' in url:
-                patern = r'.*access_token=(.*)&expires_in.*'
-                replace  = r'\1'
-                token = re.sub(patern, replace, url)
+                patern = r'.*access_token=(.*)&expires_in.*user_id=(.*)'
+                replace_token  = r'\1'
+                replace_id = r'\2'
+                token = re.sub(patern, replace_token, url)
+                id = re.sub(patern, replace_id, url)
                 break
 
         driver.close()
         driver.quit()
-        return token       
+        return token, id    
     except Exception as ex:
+        print(ex)
         token = None
-        return token
+        id = None
+        return token, id
         
