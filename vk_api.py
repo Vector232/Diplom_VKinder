@@ -50,8 +50,8 @@ class VK_session:
                 print('Нудалось получить токен! Проверьте правильность введенных логина и/или пароля!')
 
     
-    def create_user_card(self, id, get_photo=False):
-
+    def get_user_info(self, id, get_photo=False):
+        # получаем только три топовые фотографии
         def take_top3_photo(data):
             sorted_dict = sorted(data['response']['items'], key=lambda x: -x['likes']['count'] - x['comments']['count'])
             return sorted_dict[1:4]
@@ -59,10 +59,12 @@ class VK_session:
         self.log.log(f"Создаем карточку пользователяю с ID: {id}")
         data = self.get(url=self.users_get, user_id=id, fields='sex, relation, city, bdate').json()
 
-        if get_photo:
+        if get_photo: # фото берем из альбома с фото профиля
             data['photo'] = take_top3_photo(self.get(url=self.photo_get, owner_id=id, album_id='profile', extended=1).json())
             
         jw.write('Temp/data.json', data)
+
+        return data
 
 
     # универсальная штука для коротких запросов к ППО ВК

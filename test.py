@@ -1,9 +1,35 @@
-import time
-from selenium import webdriver
+import sqlalchemy
+from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
+from vkinderdbmodel import create_tables, push, User, Photo, Output, Photo_User
 
-driver = webdriver.Edge()
+class DateBase:
+    def __init__(self) -> None:
+        def load_dsn():
+            load_dotenv()
 
-driver.maximize_window()
+            dialect = os.getenv('dialect')
+            driver = os.getenv('driver')
+            login = os.getenv('login_DB')
+            password = os.getenv('password_DB')
+            server_name = os.getenv('server_name')
+            port = os.getenv('port') 
+            db_name = os.getenv('db_name')
+            
+            return f'{dialect}+{driver}://{login}:{password}@{server_name}:{port}/{db_name}'
 
-driver.get(f'https://oauth.vk.com/authorize?client_id=51723957&display=page&scope=photos&response_type=token&v=5.131')
-time.sleep(5)
+
+        DSN = load_dsn()
+        engine = sqlalchemy.create_engine(DSN)
+
+        create_tables(engine)
+
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
+
+    def push_card(self, data):
+        push(self.session, data)
+        print(self.session.query(User).all())
+
+print('lol')
