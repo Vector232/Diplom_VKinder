@@ -2,7 +2,7 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
-from database.vkinderdbmodel import create_tables, User, Photo, Output, Photo_User
+from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User
 
 class DateBase:
     def __init__(self) -> None:
@@ -50,6 +50,24 @@ class DateBase:
                 self.session.add(Photo_User(photo_id=photo.get('photo_id'), user_id=user_id))
 
         self.session.commit()
+
+    def get_viewed(self, id):
+        res = []
+
+        q = self.session.query(Output.output_user_id).where(Output.input_user_id == id)
+        for item in q:
+            res.append(item)
+
+        return res
+    
+    def get_users(self):
+        res = []
+
+        q = self.session.query(User.user_id)
+        for item in q:
+            res.append(item)
+
+        return res
 
         
 

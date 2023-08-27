@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     info = session.get_user_info(session.user_id, get_photo=True)
     
-    card, photos = ucm.makeusercard(info)
+    card, photos = ucm.makeusercard(info, get_photo=True)
     print(card)
     print(photos)
     DB = dbselect.DateBase()
@@ -28,6 +28,9 @@ if __name__ == '__main__':
     q = DB.session.query(Photo)
     for i in q:
         print(i)
+
+    candidates = session.find_candidates(DB, card)
+    print(candidates)
 
     print(f'{"КОНЕЦ РАБОТЫ ПРОГРАММЫ":*^31}')
 

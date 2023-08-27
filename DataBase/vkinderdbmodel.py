@@ -9,10 +9,10 @@ class User(Base):
     user_id = sq.Column(sq.Integer, primary_key=True)
     name = sq.Column(sq.VARCHAR(length=20), nullable=False)
     last_name = sq.Column(sq.VARCHAR(length=20), nullable=False)
-    age = sq.Column(sq.Integer)
+    age = sq.Column(sq.VARCHAR(length=15))
     sex = sq.Column(sq.Integer)
     relation = sq.Column(sq.Integer)
-    city = sq.Column(sq.Integer)
+    city = sq.Column(sq.VARCHAR(length=30))
     interest_table_id = sq.Column(sq.Integer)
 
     def __str__(self):

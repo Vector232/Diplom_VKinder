@@ -1,5 +1,7 @@
 import requests
 import os
+import time
+import string
 from pprint import pprint
 from dotenv import load_dotenv
 # самодельные модули с нужным функционалом
@@ -8,12 +10,14 @@ import jsonwrite as jw
 # получение токена вк
 from gettoken import get_token
 import loger
-
-
+# взаимодействие с БД
+import database.vkinderdbselect as db
+# собирает карточку пользователя
+import usercardmaker as ucm
 load_dotenv()
 
 class VK_session:
-    def __init__(self, env = False):
+    def __init__(self, env = False): # env - определяет режим работы. True: Тестовый берет данные из окружения. 
         self.log = loger.Loger()
         self.log.log("Создан объект класса VK_session.")
 
@@ -65,9 +69,66 @@ class VK_session:
         jw.write('Temp/data.json', data)
 
         return data
+    
+    # Находит 10 кандидатов по правилу.
+    def find_candidates(self, DB, card: dict):
+        # получить прошлых кандидатов
+        viewed = DB.get_viewed(card['user_id'])
+        print(f'Есть в БД: {viewed}')
+        #  зафиксировать просмотренные профили
+        currently_viewed = {}
+        candidates = {}
+        # alphabet = [chr(i) for i in range('a','a'+32)] + string.ascii_uppercase
+        query = ''
+        offset = 0
+        count = 50
+        sex = card['fields'].get('sex', 0)
+        
+        while len(candidates) < 10:         
+            print(f'Новый проход {count} {offset}')
+            if offset >= 900: break
+
+            fields = {'q': query,
+                  'sort': 0,
+                  'offset': offset,
+                  'count': count,
+                  'sex': sex,
+                  'fields': 'bdate, sex, relation, city'}
+            
+            response = self.get(url=self.users_search, **fields).json()
+            time.sleep(0.3)
+            try:
+                pre_candidates = response['response']['items']
+            except:
+                print(response)
+                break
+            #нужно написать правило подбора. Пожалуй самая тяжелая часть.
+            for pre_candidat in pre_candidates:
+                currently_viewed[pre_candidat['id']] = True
+
+                bdate_a = pre_candidat.get('bdate', None)
+                if bdate_a != None: bdate_a = int(bdate_a.split(sep='.')[-1])
+                else: continue
+                bdate_b = card['fields'].get('age')
+                if bdate_a > 2003:
+                    candidates[pre_candidat['id']] = ucm.makeusercard({'response':[pre_candidat]})
+                    DB.push_user_card(candidates[pre_candidat['id']])
+                    
+                    if len(candidates) >= 10:
+                        break
+
+            offset += 50
+        print(currently_viewed)
+        viewed = DB.get_users()
+        print(f'Есть в БД после прохода: {viewed}')
+        return candidates
+            
 
 
-    # универсальная штука для коротких запросов к ППО ВК
+    # универсальная штука для коротких запросов к ППО ВК.
+    # Источник исключения при невалидном токене.
+    # Только в тестовом ломается из-за неактуального токена.
+    # По идее невозможно в рабочем режиме. 
     def get(self, url, **kwargs):
         self.log.log(f"Запрос к ППО ВК: {url}: ({kwargs})")
         params = {'access_token': self.access_token, 
@@ -85,7 +146,7 @@ class VK_session:
 
 
     def test1(self):
-        response = self.get(url=self.users_search, q='', count=10)
+        response = self.get(url=self.users_search, q='', count=10, city=None)
         jw.write('Temp/data.json', response)
         pprint(jw.read('Temp/data.json'))
        
