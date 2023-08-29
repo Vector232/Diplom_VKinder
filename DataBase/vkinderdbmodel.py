@@ -9,7 +9,7 @@ class User(Base):
     user_id = sq.Column(sq.Integer, primary_key=True)
     name = sq.Column(sq.VARCHAR(length=20), nullable=False)
     last_name = sq.Column(sq.VARCHAR(length=20), nullable=False)
-    age = sq.Column(sq.VARCHAR(length=15))
+    bdate = sq.Column(sq.VARCHAR(length=15))
     sex = sq.Column(sq.Integer)
     relation = sq.Column(sq.Integer)
     city = sq.Column(sq.VARCHAR(length=30))
@@ -17,7 +17,7 @@ class User(Base):
 
     def __str__(self):
         return (f'User {self.user_id}: ({self.name, self.last_name}'
-                f'{self.age, self.sex, self.relation, self.city, self.interest_table_id})')
+                f'{self.bdate, self.sex, self.relation, self.city, self.interest_table_id})')
     
 class Photo(Base):
     __tablename__ = 'photo'
@@ -51,6 +51,9 @@ class Output(Base):
 
     input_user = relationship(User, foreign_keys=[input_user_id])
     output_user = relationship(User, foreign_keys=[output_user_id])
+
+    def __str__(self):
+        return f'Photo_User {self.output_id}: ({self.input_user_id, self.output_user_id})'
 
 def create_tables(engine):
     Base.metadata.drop_all(engine)

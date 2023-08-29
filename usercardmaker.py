@@ -13,7 +13,7 @@ def makeusercard(dict_: dict, get_photo = False) -> dict:
     best_data['fields'] = {}
     best_data['fields']['name'] = source.get("first_name", 'Noname')
     best_data['fields']['last_name'] = source.get("last_name", 'Nosurname')
-    best_data['fields']['age'] = source.get("bdate", None)
+    best_data['fields']['bdate'] = source.get("bdate", None)
     best_data['fields']['sex'] = source.get("sex", None)
     best_data['fields']['relation'] = source.get("relation", None)
     if source.get("city", None):

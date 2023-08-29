@@ -51,10 +51,13 @@ class DateBase:
 
         self.session.commit()
 
+    def push_output(self, input_user_id, output_user_id):
+        self.session.add(Output(input_user_id=input_user_id, output_id=input_user_id))
+
     def get_viewed(self, id):
         res = []
 
-        q = self.session.query(Output.output_user_id).where(Output.input_user_id == id)
+        q = self.session.query(Output.input_user_id).where(Output.input_user_id == id)
         for item in q:
             res.append(item)
 
