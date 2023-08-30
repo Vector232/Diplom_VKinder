@@ -42,12 +42,26 @@ class Photo_User(Base):
     def __str__(self):
         return f'Photo_User {self.photo_user_id}: ({self.photo_id, self.user_id})'
     
+class Like(Base):
+    __tablename__ = ' like'
+
+    like_id = sq.Column(sq.Integer, primary_key=True)
+    photo_id = sq.Column(sq.Integer, sq.ForeignKey('photo.photo_id'), nullable=False)
+    user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=True)
+
+    photo = relationship(Photo, foreign_keys=[photo_id])
+    user =relationship(User, foreign_keys=[user_id])
+
+    def __str__(self):
+        return f'Like {self.like_id}: ({self.photo_id, self.user_id})'
+    
 class Output(Base):
     __tablename__ = 'output'
 
     output_id = sq.Column(sq.Integer, primary_key=True)
     input_user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
     output_user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
+    grade = sq.Column(sq.Integer)
 
     input_user = relationship(User, foreign_keys=[input_user_id])
     output_user = relationship(User, foreign_keys=[output_user_id])

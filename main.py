@@ -3,7 +3,7 @@ import usercardmaker as ucm
 import database.vkinderdbselect as dbselect
 # это нужно будет убрать
 from database.vkinderdbmodel import *
-
+from pprint import pprint
 if __name__ == '__main__':
     print(f'{"НАЧАЛО РАБОТЫ ПРОГРАММЫ":*^31}')
 
@@ -13,23 +13,29 @@ if __name__ == '__main__':
 
     info = session.get_user_info(session.user_id, get_photo=True)
     
-    card, photos = ucm.makeusercard(info, get_photo=True)
+    card, photos, was_noted = ucm.makeusercard(info, get_photo=True)
+
     # print(card)
-    # print(photos)
-    DB = dbselect.DateBase()
+    # for photo in photos:
+    #     print(photo)
+    # print(was_noted)
+    db = dbselect.DateBase()
    
-    DB.push_user_card(card)
-    DB.push_photos(photos, card['user_id'])
+    db.push(card)
+    for photo in photos:
+        db.push(photo)
+    for photo in was_noted:
+        db.push(photo)
 
-    # q = DB.session.query(User)
+    # q = db.session.query(User)
     # for i in q:
     #     print(i)
 
-    # q = DB.session.query(Photo)
+    # q = db.session.query(Photo)
     # for i in q:
     #     print(i)
 
-    candidates = session.find_candidates(DB, card)
+    candidates = session.find_candidates(db, card)
     # print(candidates)
 
     print(f'{"КОНЕЦ РАБОТЫ ПРОГРАММЫ":*^31}')

@@ -2,7 +2,7 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
-from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User
+from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User, Like
 
 class DateBase:
     def __init__(self) -> None:
@@ -27,6 +27,26 @@ class DateBase:
 
         Session = sessionmaker(bind=engine)
         self.session = Session()
+    
+    # для дальнейшей стандартизации
+    # все добавления в БД должны будут использлвать только этот метод
+    def push(self, data: dict):
+        model = {'user': User,
+                    'photo': Photo,
+                    'photo_user': Photo_User,
+                    'like': Like,
+                    'output': Output}[data.get('model')]
+        if model is Photo:
+            # при создании фото, создается и связь фото с пользователем
+            self.session.add(model(photo_id=data['fields']['photo_id'], url=data['fields']['url']))
+            self.session.add(Photo_User(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id'])) # дописать добавление связей со всеми отмеченными на фото
+        else:
+            self.session.add(model(**data.get('fields')))
+        self.session.commit()
+    # для дальнейшей стандартизации
+    # все запросы к БД должны будут использлвать только этот метод
+    def get():
+        pass
 
     def push_user_card(self, card):
         model = {'user': User,
@@ -52,7 +72,7 @@ class DateBase:
         self.session.commit()
 
     def push_output(self, input_user_id, output_user_id):
-        self.session.add(Output(input_user_id=input_user_id, output_id=input_user_id))
+        self.session.add(Output(input_user_id=input_user_id, output_id=output_user_id))
 
     def get_viewed(self, id):
         res = []

@@ -23,13 +23,14 @@ class VK_session:
         self.log = loger.Loger()
         self.log.log("Создан объект класса VK_session.")
 
-        self.version = 5.131
-        self.users_search = 'https://api.vk.com/method/users.search'
-        self.users_get = 'https://api.vk.com/method/users.get'
-        self.photo_get = 'https://api.vk.com/method/photos.get'
+        self.VERSION = 5.131
+        self.USERS_SEARCH = 'https://api.vk.com/method/users.search'
+        self.USERS_GET = 'https://api.vk.com/method/users.get'
+        self.PHOTO_GET = 'https://api.vk.com/method/photos.get'
+        self.PHOTO_GETUSERPHOTOS = 'https://api.vk.com/method/photos.getUserPhotos'
         self.test = test
 
-    # Получаем стартовые данные от пользователя и вытаскиваем токен для дальнейшей работы.
+    # Получаем стартовые ДАННЫЕ от пользователя и вытаскиваем токен для дальнейшей работы.
     def start(self):
         # для удобного тестирования
         if self.test:
@@ -63,22 +64,26 @@ class VK_session:
             return sorted_dict[1:4]
         
         self.log.log(f"Создаем карточку пользователяю с ID: {id}")
-        data = self.get(url=self.users_get, user_id=id, fields='sex, relation, city, bdate').json()
+        data = self.get(url=self.USERS_GET, user_id=id, fields='sex, relation, city, bdate').json()
 
-        if get_photo: # фото берем из альбома с фото профиля
-            data['photo'] = take_top3_photo(self.get(url=self.photo_get, owner_id=id, album_id='profile', extended=1).json())
+        if get_photo: 
+            # фото берем из альбома с фото профиля
+            data['photo'] = take_top3_photo(self.get(url=self.PHOTO_GET, owner_id=id, album_id='profile', extended=1).json())
+            # получаем фото на которых пользователь был отмечен
+            data['was_noted'] = self.get(url=self.PHOTO_GETUSERPHOTOS, user_id=id).json()['response']
             
         jw.write('Temp/data.json', data)
 
         return data
     
     # Находит 10 кандидатов по правилу.
-    def find_candidates(self, DB, card: dict):
+    def find_candidates(self, db, card: dict):
+        self.log.log(f"Инициирован поиск кандидатов.")
         # главный оцениватель пре-кандидатов
-        matchmaker = mm.Matchmaker(card, self.log, self.test)
+        matchmaker = mm.Matchmaker(db, card, self.log, self.test)
 
         # получить прошлых кандидатов
-        viewed = DB.get_viewed(card['user_id'])
+        # viewed = db.get_viewed(card['user_id'])
         # print(f'Есть в БД: {viewed}')
 
         # зафиксировать просмотренные профили
@@ -93,18 +98,17 @@ class VK_session:
         elif card['fields']['sex'] == 2: sex = 1
         else: sex = None
 
-        while input("Продолжить подбор?(y/n)") == 'y':       
-            # print(f'Новый проход {count} {offset}')
-
+        while True:     
             fields = {'q': query,
                   'sort': 0,
                   'offset': offset,
                   'count': count,
                   'sex': sex,
                   'fields': 'bdate, sex, relation, city'}
-            
+
             # запрашиваем список пре-кандидатов
-            response = self.get(url=self.users_search, **fields).json()
+            self.log.log(f"Запрос пре-кандидатов с параметрами: {fields}.")
+            response = self.get(url=self.USERS_SEARCH, **fields).json()
             time.sleep(0.3) # подумать над заменой сна на что-то инное                  !!!!
             
             if len(response['response']['items']) == 0: break # дописать момент с изменение параметров поиска (для обхода ограниченией в 1000 профилей на выдаче)
@@ -118,34 +122,12 @@ class VK_session:
             
             # оцениваем полученных пре-кандидатов
             matchmaker.add_and_evaluation(pre_candidates)
-
-            ##################ЭТА ЧАСТЬ УСТАРЕЛА
-            # #нужно написать правило подбора. Пожалуй самая тяжелая часть.
-            # for pre_candidat in pre_candidates:
-            #     # если уже смотрели, то пропускаем
-            #     if self.currently_viewed.get(pre_candidat['id'], False): continue
-            #     # если не смотрели, то помечаем, что смотрели
-            #     self.currently_viewed[pre_candidat['id']] = True
-            #     # проверка соответствию позиции кандадата
-                
-
-            #     if matchmaker.is_candidate(card['fields'], pre_candidat, self.test):
-            #         # если подошел, сразу закинем в БД
-            #         DB.push_output(card['user_id'], pre_candidat['id'])
-            #         #  и добавим в результирующий словарь
-            #         candidates[pre_candidat['id']] = ucm.makeusercard({'response':[pre_candidat]}) # нужны ли нам подробные данные? Оставить ссылку на профиль не достаточно?
-            #         # если словарь заполнился нужными 10 кандидатами, прекращаем поиск
-            #         # эта проверка нужна так как за проход проверяется несколько десятков пре-кандидатов
-            #         if len(candidates) >= 10:
-            #             break
-            ##################ЭТА ЧАСТЬ УСТАРЕЛА
-            print(f'Подобрано {len(matchmaker.get_candidates())} кандидатов.')
             offset += count
 
         # print(currently_viewed)
         # viewed = DB.get_users()
         # print(f'Есть в БД после прохода: {viewed}')
-        candidates = matchmaker.get_candidates()
+        candidates = matchmaker.get_candidates(slice_=False)
         self.log.log(f"Подобрано {len(candidates)} кандидатов.")
         jw.write('Temp/candidates.json', candidates)
         return candidates
@@ -159,7 +141,7 @@ class VK_session:
     def get(self, url, **kwargs):
         self.log.log(f"Запрос к ППО ВК: {url}: ({kwargs})")
         params = {'access_token': self.access_token, 
-                    'v': self.version,
+                    'v': self.VERSION,
                     **kwargs
                     }
         try:

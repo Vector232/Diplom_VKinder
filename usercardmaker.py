@@ -1,6 +1,6 @@
 # заполняет крточку пользователя
 from datetime import datetime
-
+from pprint import pprint
 
 
 
@@ -9,8 +9,8 @@ def makeusercard(dict_: dict, get_photo = False) -> dict:
 
     best_data = {}
     best_data['model'] = 'user'
-    best_data['user_id'] = source.get("id", None)
     best_data['fields'] = {}
+    best_data['fields']['user_id'] = source.get("id", None)
     best_data['fields']['name'] = source.get("first_name", 'Noname')
     best_data['fields']['last_name'] = source.get("last_name", 'Nosurname')
     best_data['fields']['bdate'] = source.get("bdate", None)
@@ -21,17 +21,37 @@ def makeusercard(dict_: dict, get_photo = False) -> dict:
     else:
         best_data['fields']['city'] = None
     
+    # если фото не просили, то закругляемся
     if not get_photo: return best_data
 
-    photos = dict_.get('photo', None)
+    photos = dict_['photo']
+    best_photos = []
+    for photo in photos:
+        best_photo = {}
+        best_photo['model'] = 'photo'
+        best_photo['fields'] = {}
+        best_photo['fields']['user_id'] = source.get("id", None)
+        best_photo['fields']['photo_id'] = photo.get('id', None)
 
-    best_photo = {}
-    best_photo['model'] = 'photo'
-    best_photo['fields'] = []
-    for photo in photos:  
-        photo_id = photo['id']
-        url = max(photo["sizes"], key=lambda x: x['height'] * x['width'])["url"]
+        url = max(photo["sizes"], key=lambda x: x['height'] * x['width'])["url"] # подумать о переносе в другое место
+        best_photo['fields']['url'] = url
+
+        best_photos.append(best_photo)
+
+
+    photos_tags = dict_['was_noted']['items']
+
+    was_noted = []
+    for photo_tags in photos_tags:
+        photo = {}
+        photo['model'] = 'photo'
+        photo['fields'] = {}
+        photo['fields']['user_id'] = photo_tags.get("owner_id", None)
+        photo['fields']['photo_id'] = photo_tags.get('id', None)
         
-        best_photo['fields'].append({'photo_id': photo_id, 'url': url})
+        url = max(photo_tags["sizes"], key=lambda x: x['height'] * x['width'])["url"] # подумать о переносе в другое место
+        photo['fields']['url'] = url
 
-    return best_data, best_photo
+        was_noted.append(photo)
+
+    return best_data, best_photos, was_noted

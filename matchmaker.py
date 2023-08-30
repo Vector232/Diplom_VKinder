@@ -10,28 +10,29 @@
 import loger
 
 class Matchmaker():
-    def __init__(self, card, log: loger.Loger, test = False) -> None: # полностью результат usercardmaker-а
+    def __init__(self, db, card, log: loger.Loger, test = False) -> None: # полностью результат usercardmaker-а
         self.log = log
         self.log.log(f"Matchmaker инициирован!")
 
         self.candidates = []
         
         if test: # для тестовой работы
-            self.card = {'model': 'user', 
-                         'user_id': 95135266, 
-                         'fields': {'name': 'Владислав', 
-                                    'last_name': 'Троян', 
-                                    'bdate': '26.3.2000', 
-                                    'sex': 2, 'relation': 0, 
-                                    'city': 'Симферополь'}}
+            self.card = {'model': 'user', 'user_id': 95135266,'fields': {'name': 'Владислав', 'last_name': 'Троян', 'bdate': '26.3.2000', 'sex': 2, 'relation': 0, 'city': 'Симферополь'}}
         else:
             self.card = card
 
     def add_and_evaluation(self, precandidate_pool):
+        viewed = {}
+        selected = []
+        self.log.log(f"Matchmaker рассматривает {len(precandidate_pool)} пре-кандидатов.")
         for precandidat in precandidate_pool:
-            
-            grade = 0
+            # на случай работы с ответами на разные заапросы к ППО ВК
+            pc_id = precandidat.get('id')
+            if pc_id in viewed: continue
+            viewed[pc_id] = 0
 
+            grade = 0
+            
             pc_sex = precandidat.get('sex', None)
             user_sex = self.card['fields']['sex']
             pc_relation = precandidat.get('relation', None)
@@ -75,6 +76,9 @@ class Matchmaker():
                 grade += 6 
             elif pc_relation == 1 or pc_relation == 0:
                 grade += 3
+            else:
+                self.log.log(f'Пре-кандидат {precandidat["id"]} не подошел. Связан с другим партнером.')
+                continue
 
 
             # оцениваем возраст
@@ -88,6 +92,7 @@ class Matchmaker():
                 elif abs_dif <= 5:
                     grade += 2
                 else:
+                    self.log.log(f'Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст.')
                     continue
             elif user_sex == 1:
                 if 2 <= difference <= 4:
@@ -97,15 +102,17 @@ class Matchmaker():
                 elif -1 <= difference <= 6:
                     grade += 2
                 else:
+                    self.log.log(f'Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст.')
                     continue
             elif user_sex == 2:
-                if -2 >= difference >= -4:
+                if -2 >= difference >= -3:
                     grade += 6
-                elif -1 >= difference >= -5:
+                elif -1 >= difference >= -4:
                     grade += 4
                 elif difference == 0:
                     grade += 2
                 else:
+                    self.log.log(f'Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст.')
                     continue
             
             # Если из одного города, то + 2 балла
@@ -114,12 +121,24 @@ class Matchmaker():
             if user_city == pc_city != None:
                 grade += 2
 
-            self.log.log(f'Пре-кандидат {precandidat["id"]} прошел оценивание на {grade} баллов.')
-            self.candidates.append({'grade': grade, 'fields': precandidat})
+            viewed[pc_id] = grade
 
-    def get_candidates(self):
-        self.candidates.sort(key=lambda x: x['grade'])
-        return self.candidates
+            self.log.log(f'Пре-кандидат {precandidat["id"]} прошел оценивание на {grade} баллов.')
+            selected.append({'grade': grade, 'fields': precandidat})
+        self.candidates.extend(selected)
+        self.candidates.sort(reverse=True, key=lambda x: x['grade'])
+        self.log.log(f'Прошли {len(selected)} кандидатов. Всего в пуле {len(self.candidates)} кандидатов.')
+
+
+    def get_candidates(self, slice_ = True):
+        if not slice_: return self.candidates
+
+        if len(self.candidates) >= 10:
+            ans = self.candidates[:10]
+            self.candidates = self.candidates[10:]
+            return ans
+        else:
+            return self.candidates
     
     def __del__(self):
         self.log.log('Matchmaker завершил работу!')
@@ -127,16 +146,14 @@ class Matchmaker():
                 
 
             
-
+# устарело
 def is_candidate(card_f, pre_candidat_f, env):
-    
-
     # print(pre_candidat_f)
     user_bdate = int(card_f['bdate'].split(sep='.')[-1])
     pre_cand_bdate = pre_candidat_f.get('bdate', None)
    
     if pre_cand_bdate == None: return False
-    #rint(user_bdate - int(pre_cand_bdate.split(sep='.')[-1]))
+    # print(user_bdate - int(pre_cand_bdate.split(sep='.')[-1]))
     if 1 < (user_bdate - int(pre_cand_bdate.split(sep='.')[-1])) < 4:
         return True
     return False
