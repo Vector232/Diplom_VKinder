@@ -1,11 +1,15 @@
-import sqlalchemy
-from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
-from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User, Like
+
+import sqlalchemy
+from sqlalchemy.orm import sessionmaker
+
+from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User, Like, Photo_With_User
+from loger import Loger
+
 
 class DateBase:
-    def __init__(self, new = True) -> None:
+    def __init__(self, loger: Loger = None,new = True) -> None:
         def load_dsn():
             load_dotenv()
 
@@ -27,6 +31,8 @@ class DateBase:
 
         Session = sessionmaker(bind=engine)
         self.session = Session()
+        self.log = loger
+        if self.log: self.log.log(f'DB -> База данных создана.')
     
     # для дальнейшей стандартизации
     # все добавления в БД должны будут использлвать только этот метод
@@ -35,12 +41,37 @@ class DateBase:
                     'photo': Photo,
                     'photo_user': Photo_User,
                     'like': Like,
-                    'output': Output}[data.get('model')]
+                    'output': Output,
+                    'photo_with_user': Photo_With_User}[data.get('model')]
         if model is Photo:
-            # при создании фото, создается и связь фото с пользователем
-            self.session.add(model(photo_id=data['fields']['photo_id'], url=data['fields']['url']))
-            self.session.add(Photo_User(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id'])) # дописать добавление связей со всеми отмеченными на фото
-        else:
+            if self.session.query(Photo.photo_id).where(Photo.photo_id == data['fields']['photo_id']).first():
+                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
+            else:
+                self.session.add(model(photo_id=data['fields']['photo_id'], url=data['fields']['url']))
+                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo.")
+            #  При создании фото, создается и связь фото с пользователем. 
+            if self.session.query(Photo_User.photo_id).where(Photo_User.photo_id == data['fields']['photo_id']
+                                                             and Photo_User.user_id == data['fields']['user_id']).first():
+                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo_User.")
+            else:
+                self.session.add(Photo_User(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id']))
+                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo_User.")
+
+        elif model is Photo_With_User:
+            if self.session.query(Photo.photo_id).where(Photo.photo_id == data['fields']['photo_id']).first():
+                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
+            else:
+                self.session.add(Photo(photo_id=data['fields']['photo_id'], url=data['fields']['url']))
+                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo.")
+            #  При создании фото c пользователем, создается отдельная запись без привязки к владельца фото.
+            if self.session.query(Photo_With_User.photo_id).where(Photo_With_User.photo_id == data['fields']['photo_id'] 
+                                                                      and Photo_With_User.user_id == data['fields']['user_id']).first():
+                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id'], data['fields']['user_id']} в Photo_With_User.")
+            else:
+                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo_With_User.")
+                self.session.add(model(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id']))
+                
+        else: #  Добавить проверок на User чтобы не было коллизий.                !!!!
             self.session.add(model(**data.get('fields')))
         self.session.commit()
     # для дальнейшей стандартизации

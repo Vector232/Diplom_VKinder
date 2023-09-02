@@ -2,21 +2,23 @@ import requests
 import os
 from pprint import pprint
 from dotenv import load_dotenv
+import time
 
 #  Самодельные модули с нужным функционалом
+#  Логер. Спасибо Кэп.
+from loger import Loger
 #  Работа с json файлами
 import jsonwrite as jw
 #  Получение токена вк
 from vkapi.gettoken import get_token
 
 
-
 class VK_session:
-    def __init__(self, loger, test = False): # env - определяет режим работы. True: Тестовый берет данные из окружения. 
+    def __init__(self, loger: Loger = None, test = False): # env - определяет режим работы. True: Тестовый берет данные из окружения. 
         load_dotenv()
 
         self.log = loger
-        if self.log: self.log.log("Создан объект класса VK_session.")
+        if self.log: self.log.log("VK_API -> Создан объект класса VK_session.")
 
         self.VERSION = 5.131
         self.USERS_SEARCH = 'https://api.vk.com/method/users.search'
@@ -25,30 +27,30 @@ class VK_session:
         self.PHOTO_GETUSERPHOTOS = 'https://api.vk.com/method/photos.getUserPhotos'
         self.test = test
 
-    # Получаем стартовые ДАННЫЕ от пользователя и вытаскиваем токен для дальнейшей работы.
+    #  Получаем стартовые ДАННЫЕ от пользователя, вытаскиваем токен для дальнейшей работы.
     def get_main_info(self):
         # для удобного тестирования
         if self.test:
-            if self.log: self.log.log("Сессия запущена в тестовом режиме. Данные получены из окружения.")
+            if self.log: self.log.log("VK_API -> Сессия запущена в тестовом режиме. Данные получены из окружения.")
             
             print('Тестовый режим. Токен успешно получен!')
             self.user_id = os.getenv('USER_ID')
             self.access_token = os.getenv('USER_TOKEN')
             return
         
-        if self.log: self.log.log("Сессия запущена в основном режиме.")
+        if self.log: self.log.log("VK_API -> Сессия запущена в основном режиме.")
         while True:
             try:
                 (self.access_token, self.user_id) = get_token(os.getenv('CLIENT_ID'))
                 if not self.access_token: raise Exception
                 
-                if self.log: self.log.log(f"Токен успешно получен! Токен: {self.access_token}")
-                if self.log: self.log.log(f"Токен получен для пользователя с ID: {self.user_id}")
+                if self.log: self.log.log(f"VK_API -> Токен успешно получен! Токен: {self.access_token}")
+                if self.log: self.log.log(f"VK_API -> Токен получен для пользователя с ID: {self.user_id}")
                 print('Токен успешно получен!')
                 print(f'Токен: {self.access_token}')
                 break
             except:
-                if self.log: self.log.log("Неудачная попытка получения токена.")
+                if self.log: self.log.log("VK_API -> Неудачная попытка получения токена.")
                 print('Нудалось получить токен! Проверьте правильность введенных логина и/или пароля!')
 
     
@@ -62,14 +64,18 @@ class VK_session:
                 raise
             return sorted_dict[1:4]
         
-        if self.log: self.log.log(f"Создаем карточку пользователяю с ID: {id}")
+        if self.log: self.log.log(f"VK_API -> Создаем карточку пользователяю с ID: {id}")
         data = self.get(url=self.USERS_GET, user_id=id, fields='sex, relation, city, bdate').json()
 
         if get_photo: 
             # фото берем из альбома с фото профиля
             data['photo'] = take_top3_photo(self.get(url=self.PHOTO_GET, owner_id=id, album_id='profile', extended=1).json())
             # получаем фото на которых пользователь был отмечен
-            data['was_noted'] = self.get(url=self.PHOTO_GETUSERPHOTOS, user_id=id).json()['response']
+            sub_data = self.get(url=self.PHOTO_GETUSERPHOTOS, user_id=id).json()
+            if sub_data.get('response', False):
+                data['was_noted'] = sub_data['response']
+            else:
+                data['was_noted'] = {}
             
         jw.write('Temp/data.json', data)
 
@@ -88,19 +94,13 @@ class VK_session:
                     }
         try:
             response = requests.get(url=url, params=params)
-            if self.log: self.log.log(f"Ответ от ППО ВК: {response}")
+            time.sleep(0.3)
+            if self.log: self.log.log(f"VK_API -> Ответ от ППО ВК: {response}")
         except Exception as ex:
             print(f'Возникла ошибочка в vk_api.get: {ex}')
-            if self.log: self.log.log(f"Возникла ошибочка в vk_api.get: {ex}")
+            if self.log: self.log.log(f"VK_API -> Возникла ошибочка в vk_api.get: {ex}")
         return response
     
 
-    def __del__(self):
-        if self.log: self.log.log('Сессия завершена!')
-
-    # пусть будет тут какое-то время
-    def test1(self):
-        response = self.get(url=self.users_search, q='', count=10, city=None)
-        jw.write('Temp/data.json', response)
-        pprint(jw.read('Temp/data.json'))
-       
+    # def __del__(self):
+    #     if self.log: self.log.log('Сессия завершена!')

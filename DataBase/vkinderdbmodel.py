@@ -8,7 +8,7 @@ class User(Base):
 
     user_id = sq.Column(sq.Integer, primary_key=True)
     name = sq.Column(sq.VARCHAR(length=20), nullable=False)
-    last_name = sq.Column(sq.VARCHAR(length=20), nullable=False)
+    last_name = sq.Column(sq.VARCHAR(length=40), nullable=False)
     bdate = sq.Column(sq.VARCHAR(length=15))
     sex = sq.Column(sq.Integer)
     relation = sq.Column(sq.Integer)
@@ -41,6 +41,19 @@ class Photo_User(Base):
 
     def __str__(self):
         return f'Photo_User {self.photo_user_id}: ({self.photo_id, self.user_id})'
+    
+class Photo_With_User(Base):
+    __tablename__ = 'photo_with_user'
+
+    photo_with_user_id = sq.Column(sq.Integer, primary_key=True)
+    photo_id = sq.Column(sq.Integer, sq.ForeignKey('photo.photo_id'), nullable=False)
+    user_id =  sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
+
+    photo = relationship(Photo, foreign_keys=[photo_id])
+    user = relationship(User, foreign_keys=[user_id])
+
+    def __str__(self):
+        return f'Photo_User {self.photo_with_user_id}: ({self.photo_id, self.user_id})'
     
 class Like(Base):
     __tablename__ = 'like'
