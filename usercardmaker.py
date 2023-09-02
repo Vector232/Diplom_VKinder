@@ -1,9 +1,4 @@
 # заполняет крточку пользователя
-from datetime import datetime
-from pprint import pprint
-
-
-
 def makeusercard(dict_: dict, get_photo = False) -> dict:    
     source = dict_["response"][0]
 

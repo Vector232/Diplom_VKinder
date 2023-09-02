@@ -7,22 +7,23 @@
 #                   добавить партнера
 # }
 # pre_candidat_f  
-import loger
+from loger import
+import usercardmaker as ucm
 
 class Matchmaker():
     def __init__(self, db, card, log: loger.Loger, test = False) -> None: # полностью результат usercardmaker-а
         self.log = log
         self.log.log(f"Matchmaker инициирован!")
-
+        self.db = db
         self.candidates = []
         
         if test: # для тестовой работы
-            self.card = {'model': 'user', 'user_id': 95135266,'fields': {'name': 'Владислав', 'last_name': 'Троян', 'bdate': '26.3.2000', 'sex': 2, 'relation': 0, 'city': 'Симферополь'}}
+            self.card = {'model': 'user', 'fields': {'user_id': 95135266, 'name': 'Владислав', 'last_name': 'Троян', 'bdate': '26.3.2000', 'sex': 2, 'relation': 0, 'city': 'Симферополь'}}
         else:
             self.card = card
 
     def add_and_evaluation(self, precandidate_pool):
-        viewed = {}
+        viewed = self.db.get_viewed(id=self.card['fields']['user_id'])
         selected = []
         self.log.log(f"Matchmaker рассматривает {len(precandidate_pool)} пре-кандидатов.")
         for precandidat in precandidate_pool:
@@ -69,7 +70,7 @@ class Matchmaker():
             if pc_relation == 6 \
                 or ((pc_relation == 7 \
                     or pc_relation == 3\
-                        or pc_relation == 2) and pc_relation_partner.get('id') == self.card['user_id']):
+                        or pc_relation == 2) and pc_relation_partner.get('id') == self.card['fields']['user_id']):
                 grade += 9
             # остальные варианты получают меньше баллов
             elif pc_relation == 1 or pc_relation == 0: 
@@ -130,11 +131,21 @@ class Matchmaker():
         self.log.log(f'Прошли {len(selected)} кандидатов. Всего в пуле {len(self.candidates)} кандидатов.')
 
 
-    def get_candidates(self, slice_ = True):
-        if not slice_: return self.candidates
+    def get_candidates(self, cut = True):
+        if not cut: return self.candidates
 
         if len(self.candidates) >= 10:
             ans = self.candidates[:10]
+            #  Заполняем БД, чтобы не забывать кого уже показывали.
+            for candidate in ans:
+                #  Создаем карточки кандидатов.
+                candidate_card = ucm.makeusercard({'response': [candidate['fields']]}, get_photo = True)
+                self.db.push(candidate_card)
+                # Создаем записи о выдаче карточки текущему пользователю.
+                data = {'model': 'output', 
+                        'fields': {'input_user_id': self.card['fields']['user_id'], 
+                                   'output_user_id': candidate['fields']['id'], 'grade': candidate['grade']}}
+                self.db.push(data)
             self.candidates = self.candidates[10:]
             return ans
         else:

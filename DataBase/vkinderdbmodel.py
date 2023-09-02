@@ -43,14 +43,14 @@ class Photo_User(Base):
         return f'Photo_User {self.photo_user_id}: ({self.photo_id, self.user_id})'
     
 class Like(Base):
-    __tablename__ = ' like'
+    __tablename__ = 'like'
 
     like_id = sq.Column(sq.Integer, primary_key=True)
     photo_id = sq.Column(sq.Integer, sq.ForeignKey('photo.photo_id'), nullable=False)
-    user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=True)
+    user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
 
     photo = relationship(Photo, foreign_keys=[photo_id])
-    user =relationship(User, foreign_keys=[user_id])
+    user = relationship(User, foreign_keys=[user_id])
 
     def __str__(self):
         return f'Like {self.like_id}: ({self.photo_id, self.user_id})'

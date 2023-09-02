@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User, Like
 
 class DateBase:
-    def __init__(self) -> None:
+    def __init__(self, new = True) -> None:
         def load_dsn():
             load_dotenv()
 
@@ -23,7 +23,7 @@ class DateBase:
         DSN = load_dsn()
         engine = sqlalchemy.create_engine(DSN)
 
-        create_tables(engine)
+        if new: create_tables(engine)
 
         Session = sessionmaker(bind=engine)
         self.session = Session()
@@ -44,42 +44,17 @@ class DateBase:
             self.session.add(model(**data.get('fields')))
         self.session.commit()
     # для дальнейшей стандартизации
-    # все запросы к БД должны будут использлвать только этот метод
+    # все простые запросы к БД должны будут использлвать только этот метод
     def get():
         pass
 
-    def push_user_card(self, card):
-        model = {'user': User,
-                'photo': Photo,
-                'photo_user' : Photo_User,
-                'output': Output}[card.get('model')]
-
-        self.session.add(model(user_id=card.get('user_id'), **card.get('fields')))
-
-        self.session.commit()
-
-    def push_photos(self, photos, user_id: int = -1):
-        model = {'user': User,
-                'photo': Photo,
-                'photo_user' : Photo_User,
-                'output': Output}[photos.get('model')]
-        
-        for photo in photos['fields']:
-            self.session.add(model(photo_id=photo.get('photo_id'), url=photo.get('url')))
-            if user_id != -1:
-                self.session.add(Photo_User(photo_id=photo.get('photo_id'), user_id=user_id))
-
-        self.session.commit()
-
-    def push_output(self, input_user_id, output_user_id):
-        self.session.add(Output(input_user_id=input_user_id, output_id=output_user_id))
-
+    #  Или все-же использовать отдельные методы?
     def get_viewed(self, id):
-        res = []
+        res = {}
 
-        q = self.session.query(Output.input_user_id).where(Output.input_user_id == id)
+        q = self.session.query(Output.output_user_id, Output.grade).where(Output.input_user_id == id)
         for item in q:
-            res.append(item)
+            res[item['output_user_id']] = item['grade']
 
         return res
     
