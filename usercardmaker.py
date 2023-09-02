@@ -1,9 +1,4 @@
 # заполняет крточку пользователя
-from datetime import datetime
-from pprint import pprint
-
-
-
 def makeusercard(dict_: dict, get_photo = False) -> dict:    
     source = dict_["response"][0]
 
@@ -39,14 +34,14 @@ def makeusercard(dict_: dict, get_photo = False) -> dict:
         best_photos.append(best_photo)
 
 
-    photos_tags = dict_['was_noted']['items']
+    photos_tags = dict_['was_noted'].get('items', [])
 
     was_noted = []
     for photo_tags in photos_tags:
         photo = {}
-        photo['model'] = 'photo'
+        photo['model'] = 'photo_with_user'
         photo['fields'] = {}
-        photo['fields']['user_id'] = photo_tags.get("owner_id", None)
+        photo['fields']['user_id'] = source.get("id", None) #  ID не владельца фото, а тегнутого пользователя!
         photo['fields']['photo_id'] = photo_tags.get('id', None)
         
         url = max(photo_tags["sizes"], key=lambda x: x['height'] * x['width'])["url"] # подумать о переносе в другое место

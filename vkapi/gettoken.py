@@ -1,20 +1,19 @@
 # рабочая штука, ждет пока пользователь залогинится и даст доступ, потом сразу забирает токен и закрывает браузер
 # осталось наладить вариативность для разных браузеров
+# https://oauth.vk.com/authorize?client_id=51723957&display=page&scope=photos&response_type=token&v=5.131
+
+import re
 
 from selenium import webdriver
-import re
-# https://oauth.vk.com/authorize?client_id=51723957&display=page&scope=photos&response_type=token&v=5.131
+
+
 def get_token(client_id):
     token = None
     id = None
     
-    try:
-        driver = webdriver.Chrome()
-    except:
-        try:
-            driver = webdriver.Edge()
-        except:
-            print('Не, ну это уже не серьезно!')
+    
+    driver = webdriver.Edge()
+        
   
     try:
         driver.maximize_window()
