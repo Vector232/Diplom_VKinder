@@ -6,9 +6,9 @@ import time
 
 #  Самодельные модули с нужным функционалом
 #  Логер. Спасибо Кэп.
-from loger import Loger
+from logs.loger import Loger
 #  Работа с json файлами
-import jsonwrite as jw
+import logs.jsonwrite as jw
 #  Получение токена вк
 from vkapi.gettoken import get_token
 
@@ -87,7 +87,7 @@ class VK_session:
     #  Только в тестовом ломается из-за неактуального токена.
     #  По идее невозможно в рабочем режиме. 
     def get(self, url, **kwargs):
-        if self.log: self.log.log(f"Запрос к ППО ВК: {url}: ({kwargs})")
+        if self.log: self.log.log(f"VK_API -> Запрос к ППИ ВК: {url}: ({kwargs})")
         params = {'access_token': self.access_token, 
                     'v': self.VERSION,
                     **kwargs
@@ -95,7 +95,7 @@ class VK_session:
         try:
             response = requests.get(url=url, params=params)
             time.sleep(0.3)
-            if self.log: self.log.log(f"VK_API -> Ответ от ППО ВК: {response}")
+            if self.log: self.log.log(f"VK_API -> Ответ от ППИ ВК: {response}")
         except Exception as ex:
             print(f'Возникла ошибочка в vk_api.get: {ex}')
             if self.log: self.log.log(f"VK_API -> Возникла ошибочка в vk_api.get: {ex}")

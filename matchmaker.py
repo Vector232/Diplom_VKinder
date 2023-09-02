@@ -8,8 +8,8 @@
 # }
 # pre_candidat_f 
 
-from loger import Loger
-import usercardmaker as ucm
+from logs.loger import Loger
+import vkapi.usercardmaker as ucm
 
 class Matchmaker():
     def __init__(self, session, db, card, log: Loger = None, test = False) -> None: # полностью результат usercardmaker-а

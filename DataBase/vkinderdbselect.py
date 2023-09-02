@@ -5,7 +5,7 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
 from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User, Like, Photo_With_User
-from loger import Loger
+from logs.loger import Loger
 
 
 class DateBase:

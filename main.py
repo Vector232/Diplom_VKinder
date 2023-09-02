@@ -1,8 +1,8 @@
-import vk_api_plus as vk
-import usercardmaker as ucm
+import vkapi.vk_api_plus as vk
+import vkapi.usercardmaker as ucm
 import database.vkinderdbselect as dbselect
-import jsonwrite as jw
-import loger
+import logs.jsonwrite as jw
+import logs.loger as loger
 import matchmaker as mm
 # это нужно будет убрать
 from database.vkinderdbmodel import *
