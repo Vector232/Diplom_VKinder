@@ -41,6 +41,7 @@ def find_candidates_2(session, matchmaker, db, card, log=None):
             print(f'{"Список доступных команд:":-^50}')
             print(f'{"search -> найти кандидатов":-<50}')
             print(f'{"get -> вывести десятку лучших":-<50}')
+            print(f'{"clear -> отчистить список кандидатов":-<50}')
             print(f'{"exit -> завершить работу":-<50}')
         elif command == 'exit':
             break
@@ -61,73 +62,21 @@ def find_candidates_2(session, matchmaker, db, card, log=None):
             matchmaker.add_and_evaluation(pre_candidates)
         elif command == 'get':
             candidates_ = matchmaker.get_candidates()
-            for i in candidates_:
-                pprint(i)
+            jw.write('Temp/candidates.json', candidates_)
+        elif command == 'clear':
+            matchmaker.candidates = []
 
 
 
     #  Эта часть только для лога и json-а.
     candidates = matchmaker.get_candidates(cut=False)
     if log: log.log(f"Main -> Подобрано {len(candidates)} кандидатов.")
-    jw.write('Temp/candidates.json', candidates)
+    jw.write('Temp/allcandidates.json', candidates)
 
     return
 
-#  Регулирует поиск и выдачу кандидатов. Не актуальна. Нужно менять.        !!!!
-def find_candidates(session, matchmaker, db, card, log=None):
-    if log: log.log(f"Main -> Инициирован поиск кандидатов.")
-    
-    #  Получить прошлых кандидатов
-    # viewed = db.get_viewed(card['user_id'])
-    # print(f'Есть в БД: {viewed}')
 
-    #  Зафиксировать просмотренные профили
-    currently_viewed = {}
-    candidates = {}
-
-    #  Параметры поиска. Вынес чтобы можно было менять. Правило изменения не придумал.                  Придумай!!! -> Придумал rule.py.
-    query = ''
-    offset = 0
-    count = 50
-    if card['fields']['sex'] == 1: sex = 2
-    elif card['fields']['sex'] == 2: sex = 1
-    else: sex = None
-
-    while True:     
-        fields = {'q': query,
-                'sort': 0,
-                'offset': offset,
-                'count': count,
-                'sex': sex,
-                'fields': 'bdate, sex, relation, city'}
-
-        #  Запрашиваем список пре-кандидатов
-        if log: log.log(f"Main -> Запрос пре-кандидатов с параметрами: {fields}.")
-        response = session.get(url=session.USERS_SEARCH, **fields).json()
-        
-        if len(response['response']['items']) == 0: break # дописать момент с изменение параметров поиска (для обхода ограниченией в 1000 профилей на выдаче) !!!!
-
-        #  Проверяем пришел ли нужный ответ
-        try:
-            pre_candidates = response['response']['items']
-        except Exception as ex:
-            print(f'Main -> Возникла ошибочка в vk_api.find_candidates: {ex}\n Ответ: {response}')
-            break
-        
-        #  Оцениваем полученных пре-кандидатов
-        matchmaker.add_and_evaluation(pre_candidates)
-        offset += count
-
-    # print(currently_viewed)
-    # viewed = DB.get_users()
-    # print(f'Есть в БД после прохода: {viewed}')
-    #  Эта часть только для лога и json-а.
-    candidates = matchmaker.get_candidates(cut=False)
-    if log: log.log(f"Main -> Подобрано {len(candidates)} кандидатов.")
-    jw.write('Temp/candidates.json', candidates)
-    return candidates
-
-TEST = True
+TEST = False
 
 if __name__ == '__main__':
     print(f'{"НАЧАЛО РАБОТЫ ПРОГРАММЫ":*^31}')

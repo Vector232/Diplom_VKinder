@@ -7,7 +7,7 @@ class User(Base):
     __tablename__ = 'user'
 
     user_id = sq.Column(sq.Integer, primary_key=True)
-    name = sq.Column(sq.VARCHAR(length=20), nullable=False)
+    name = sq.Column(sq.VARCHAR(length=40), nullable=False)
     last_name = sq.Column(sq.VARCHAR(length=40), nullable=False)
     bdate = sq.Column(sq.VARCHAR(length=15))
     sex = sq.Column(sq.Integer)

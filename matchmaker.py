@@ -10,6 +10,7 @@
 
 from logs.loger import Loger
 import vkapi.usercardmaker as ucm
+import logs.jsonwrite as jw
 
 class Matchmaker():
     def __init__(self, session, db, card, log: Loger = None, test = False) -> None: # полностью результат usercardmaker-а
@@ -17,7 +18,7 @@ class Matchmaker():
         if self.log: self.log.log(f"Matchmaker -> Matchmaker инициирован!")
         self.db = db
         self.session = session
-        self.candidates = []
+        self.candidates = jw.read('Temp/allcandidates.json')
         #  Просмотренные в текущей сессии не будут рассматриваться в ней повторно.
         self.viewed = {}
 
@@ -145,6 +146,7 @@ class Matchmaker():
             self.candidates = self.candidates[10:]
         else:
             ans = self.candidates
+            self.candidates = []
         
         #  Заполняем БД, чтобы не забывать кого уже показывали.
         for candidate in ans:
