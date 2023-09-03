@@ -18,24 +18,29 @@ class Matchmaker():
         self.db = db
         self.session = session
         self.candidates = []
-        
+        #  Просмотренные в текущей сессии не будут рассматриваться в ней повторно.
+        self.viewed = {}
+
         if test: # для тестовой работы
             self.card = {'model': 'user', 'fields': {'user_id': 95135266, 'name': 'Владислав', 'last_name': 'Троян', 'bdate': '26.3.2000', 'sex': 2, 'relation': 0, 'city': 'Симферополь'}}
         else:
             self.card = card
 
     def add_and_evaluation(self, precandidate_pool):
-        viewed = self.db.get_viewed(id=self.card['fields']['user_id'])
+        blacklist = self.db.get_blacklist(id=self.card['fields']['user_id'])
         selected = []
+
         if self.log: self.log.log(f"Matchmaker -> Matchmaker рассматривает {len(precandidate_pool)} пре-кандидатов.")
         for precandidat in precandidate_pool:
-            # на случай работы с ответами на разные заапросы к ППО ВК
+            #  Проверка на черный список и повторное вхождение в сессию.
             pc_id = precandidat.get('id')
-            if pc_id in viewed: continue
-            viewed[pc_id] = 0
+            if pc_id in self.viewed or pc_id in blacklist:
+                if self.log: self.log.log(f"Matchmaker -> Matchmaker пре-кандидат {pc_id} забанен или уже просмотрен в этой сессии.")
+                continue
 
             grade = 0
-            
+            self.viewed[pc_id] = grade
+
             pc_sex = precandidat.get('sex', None)
             user_sex = self.card['fields']['sex']
             pc_relation = precandidat.get('relation', None)
@@ -60,7 +65,7 @@ class Matchmaker():
                 continue
             
             # если у кого-то возраст указан без года то пропускаем оценку по возрасту
-            user_bdate = int(pc_bdate.split(sep='.')[-1])
+            user_bdate = int(user_bdate.split(sep='.')[-1])
             pc_bdate = int(pc_bdate.split(sep='.')[-1])
             if pc_bdate < 1902 or user_bdate < 1902:
                 if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Полный возраст не указан.')
@@ -77,12 +82,11 @@ class Matchmaker():
             # остальные варианты получают меньше баллов
             elif pc_relation == 1 or pc_relation == 0: 
                 grade += 6 
-            elif pc_relation == 1 or pc_relation == 0:
+            elif pc_relation == None:
                 grade += 3
             else:
                 if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Связан с другим партнером.')
                 continue
-
 
             # оцениваем возраст
             difference = user_bdate - pc_bdate
@@ -95,7 +99,7 @@ class Matchmaker():
                 elif abs_dif <= 5:
                     grade += 2
                 else:
-                    if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст.')
+                    if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст для N.')
                     continue
             elif user_sex == 1:
                 if 2 <= difference <= 4:
@@ -105,7 +109,7 @@ class Matchmaker():
                 elif -1 <= difference <= 6:
                     grade += 2
                 else:
-                    if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст.')
+                    if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст для Ж.')
                     continue
             elif user_sex == 2:
                 if -2 >= difference >= -3:
@@ -115,16 +119,16 @@ class Matchmaker():
                 elif difference == 0:
                     grade += 2
                 else:
-                    if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст.')
+                    if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} не подошел. Неподходящий возраст для М.')
                     continue
-            
+
             #  Если из одного города, то + 5 балла.
             user_city = self.card['fields']['city']
             pc_city = precandidat.get('city', None)
             if user_city == pc_city != None:
                 grade += 5
 
-            viewed[pc_id] = grade
+            self.viewed[pc_id] = grade
 
             if self.log: self.log.log(f'Matchmaker -> Пре-кандидат {precandidat["id"]} прошел оценивание на {grade} баллов.')
             selected.append({'grade': grade, 'fields': precandidat})

@@ -59,8 +59,8 @@ class VK_session:
         def take_top3_photo(data):
             try:
                 sorted_dict = sorted(data['response']['items'], key=lambda x: -x['likes']['count'] - x['comments']['count'])
-            except: # Возникает только в тестовом режиме при неактуальном токене. Надеюсь.
-                print(f'Обнови токен в .env!')
+            except: 
+                print(f'{data}')
                 raise
             return sorted_dict[1:4]
         
@@ -68,9 +68,14 @@ class VK_session:
         data = self.get(url=self.USERS_GET, user_id=id, fields='sex, relation, city, bdate').json()
 
         if get_photo: 
-            # фото берем из альбома с фото профиля
-            data['photo'] = take_top3_photo(self.get(url=self.PHOTO_GET, owner_id=id, album_id='profile', extended=1).json())
-            # получаем фото на которых пользователь был отмечен
+            #  Фото берем из альбома с фото профиля.
+            untested_data = self.get(url=self.PHOTO_GET, owner_id=id, album_id='profile', extended=1).json()
+            #  Если не приватный.
+            if untested_data.get('error'): return data
+
+            data['photo'] = take_top3_photo(untested_data)
+            
+            #  Получаем фото на которых пользователь был отмечен
             sub_data = self.get(url=self.PHOTO_GETUSERPHOTOS, user_id=id).json()
             if sub_data.get('response', False):
                 data['was_noted'] = sub_data['response']

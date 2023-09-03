@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
-from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User, Like, Photo_With_User
+from .vkinderdbmodel import create_tables, User, Photo, Output, Photo_User
+from .vkinderdbmodel import Like, Photo_With_User, Blacklist, Whitelist
 from logs.loger import Loger
 
 
@@ -34,16 +35,16 @@ class DateBase:
         self.log = loger
         if self.log: self.log.log(f'DB -> База данных создана.')
     
-    # для дальнейшей стандартизации
+    # для дальнейшей стандартизации                                         ВСЕ ПЕРЕДЕЛАТЬ! РАЗДЕЛИТЬ! РАЗНЫЕ ВСТАВКИ - РАЗНЫЕ МЕТОДЫ!
     # все добавления в БД должны будут использлвать только этот метод
     def push(self, data: dict):
-        model = {'user': User,
-                    'photo': Photo,
-                    'photo_user': Photo_User,
-                    'like': Like,
-                    'output': Output,
-                    'photo_with_user': Photo_With_User}[data.get('model')]
-        if model is Photo:
+        def add_user():
+            if self.session.query(User.user_id).where(User.user_id == data['fields']['user_id']).first():
+                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['user_id']} в User.")
+            else:
+                self.session.add(model(**data.get('fields')))
+                
+        def add_photo():
             if self.session.query(Photo.photo_id).where(Photo.photo_id == data['fields']['photo_id']).first():
                 if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
             else:
@@ -55,9 +56,9 @@ class DateBase:
                 if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo_User.")
             else:
                 self.session.add(Photo_User(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id']))
-                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo_User.")
-
-        elif model is Photo_With_User:
+                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} и {data['fields']['user_id']} в Photo_User.")
+        
+        def add_photo_with_user():
             if self.session.query(Photo.photo_id).where(Photo.photo_id == data['fields']['photo_id']).first():
                 if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
             else:
@@ -66,11 +67,24 @@ class DateBase:
             #  При создании фото c пользователем, создается отдельная запись без привязки к владельца фото.
             if self.session.query(Photo_With_User.photo_id).where(Photo_With_User.photo_id == data['fields']['photo_id'] 
                                                                       and Photo_With_User.user_id == data['fields']['user_id']).first():
-                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id'], data['fields']['user_id']} в Photo_With_User.")
+                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} и {data['fields']['user_id']} в Photo_With_User.")
             else:
                 if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo_With_User.")
                 self.session.add(model(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id']))
-                
+
+        model = {'user': User,
+                    'photo': Photo,
+                    'photo_user': Photo_User,
+                    'like': Like,
+                    'output': Output,
+                    'photo_with_user': Photo_With_User}[data.get('model')] #  Кажется уже ненужной. Пусть пока будет.
+        
+        if model is Photo:
+            add_photo()
+        elif model is Photo_With_User:
+            add_photo_with_user()
+        elif model is User:
+            add_user()  
         else: #  Добавить проверок на User чтобы не было коллизий.                !!!!
             self.session.add(model(**data.get('fields')))
         self.session.commit()
@@ -82,11 +96,23 @@ class DateBase:
     #  Или все-же использовать отдельные методы?
     def get_viewed(self, id):
         res = {}
-
         q = self.session.query(Output.output_user_id, Output.grade).where(Output.input_user_id == id)
         for item in q:
             res[item['output_user_id']] = item['grade']
-
+        return res
+    
+    def get_blacklist(self, id):
+        res = {}
+        q = self.session.query(Blacklist.banned_user_id).where(Blacklist.owner_user_id == id)
+        for item in q:
+            res[item['banned_user_id']] = 'BAN'
+        return res
+    
+    def get_whitelist(self, id):
+        res = {}
+        q = self.session.query(Whitelist.favor_user_id).where(Whitelist.owner_user_id == id)
+        for item in q:
+            res[item['favor_user_id']] = 'FAVOR'
         return res
     
     def get_users(self):
