@@ -93,6 +93,37 @@ class DateBase:
     def get():
         pass
 
+    def like_photo(self, user_id, photo_id):
+        if self.session.query(Like.like_id).where(Like.photo_id == photo_id and Like.user_id == user_id).first():
+            if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{user_id} и {photo_id} в Like.")
+        else:
+            self.session.add(Like(photo_id=photo_id, user_id=user_id))
+            if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{user_id} и {photo_id} в Like.")
+            self.session.commit()
+
+    def push_to_balcklist(self, owner_id, banned_id):
+        if self.session.query(Blacklist.blacklist_id).where(Blacklist.owner_user_id == owner_id and Blacklist.banned_user_id == banned_id).first():
+            if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{owner_id} и {banned_id} в Blacklist.")
+        else:
+            self.session.add(Blacklist(owner_user_id=owner_id, banned_user_id=banned_id))
+            if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{owner_id} и {banned_id} в Blacklist.")
+            self.session.commit()
+
+    def push_to_whitelist(self, owner_id, favor_id):
+        if self.session.query(Whitelist.whitelist_id).where(Whitelist.owner_user_id == owner_id and Whitelist.favor_user_id == favor_id).first():
+            if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{owner_id} и {favor_id} в Whitelist.")
+        else:
+            self.session.add(Whitelist(owner_user_id=owner_id, favor_user_id=favor_id))
+            if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{owner_id} и {favor_id} в Whitelist.")
+            self.session.commit()
+
+    def get_all_user_photos(self, id):
+        res = []
+        q = self.session.query(Photo.photo_id, Photo.url).select_from(Photo).join(Photo_User).where(Photo_User.user_id == id)
+        for item in q:
+            res.append(item)
+        return res
+
     #  Или все-же использовать отдельные методы?
     def get_viewed(self, id):
         res = {}
@@ -105,14 +136,14 @@ class DateBase:
         res = {}
         q = self.session.query(Blacklist.banned_user_id).where(Blacklist.owner_user_id == id)
         for item in q:
-            res[item['banned_user_id']] = 'BAN'
+            res[item[0]] = 'BAN'
         return res
     
     def get_whitelist(self, id):
         res = {}
         q = self.session.query(Whitelist.favor_user_id).where(Whitelist.owner_user_id == id)
         for item in q:
-            res[item['favor_user_id']] = 'FAVOR'
+            res[item[0]] = 'FAVOR'
         return res
     
     def get_users(self):

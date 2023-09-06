@@ -6,11 +6,10 @@ import logs.loger as loger
 import matchmaker as mm
 import rule
 # это нужно будет убрать
-from database.vkinderdbmodel import *
 from pprint import pprint
 
 #  Регулирует поиск и выдачу кандидатов. Новая версия.
-def find_candidates_2(session, matchmaker, db, card, log=None):
+def find_candidates(session, db, matchmaker, card, log=None):
     if log: log.log(f"Main -> Инициирован поиск кандидатов.")
     candidates = {}
 
@@ -28,6 +27,7 @@ def find_candidates_2(session, matchmaker, db, card, log=None):
         else:
             age = bdate
 
+    # Первый уровень меню.
     print('\n'*50)
     while True:
         print(f'{"Инструкция":-^50}')
@@ -62,6 +62,51 @@ def find_candidates_2(session, matchmaker, db, card, log=None):
             matchmaker.add_and_evaluation(pre_candidates)
         elif command == 'get':
             candidates_ = matchmaker.get_candidates()
+            # Второй уровень меню.
+            print('\n'*3)
+            while True:
+                print(f'{"Список кандидатов:"}')
+                for ind, cand in enumerate(candidates_):
+                    print(f'{ind+1}. {cand["fields"]["last_name"]} {cand["fields"]["first_name"]}:  {cand["grade"]}')
+                print(f'{"Введите номер кандидата для подробностей.":-^50}')
+                print(f'{"Введите 0 для выхода из просмотра кандидатов.":-^50}')
+
+                command = int(input("Введите команду: "))
+
+                if command == 0:
+                    break
+                elif command in [i for i in range(1,len(candidates_)+1)]:
+                    under_review = candidates_[command-1]
+                    pprint(under_review)
+                    photos = db.get_all_user_photos(under_review["fields"]["id"])
+                    for i, photo in enumerate(photos):
+                        print(f'{i+1}. {photo}')
+                    
+                    # Третий уровень меню.
+                    # тут добавление в фавор или чс, лайки фото.
+                    while True:
+                        print(f'{"Доступные действия:"}')
+                        print(f'{"ban -> навсегда исключить кандидата из рассмотрения.":-<50}')
+                        print(f'{"favor -> добавить кандидата в список избранных.":-<50}')
+                        print(f'{"like <номер> -> оценить фотографию с выбранным номером.":-<50}')
+                        print(f'{"back -> вернуться к списку кандидатов.":-<50}')
+                        command = input("Введите команду: ")
+
+                        if command == 'ban':
+                            db.push_to_balcklist(card['fields']["user_id"], under_review["fields"]["id"])
+                        elif command == 'favor':
+                            db.push_to_whitelist(card['fields']["user_id"], under_review["fields"]["id"])
+                        elif command == 'back':
+                            break
+                        else:
+                            try:
+                                com, num = command.split(sep=' ')
+                            except:
+                                continue
+                            num = int(num)
+                            if com == 'like' and num in [i for i in range(1,len(photos)+1)]:
+                                db.like_photo(card['fields']["user_id"], photos[int(num)-1][0])
+
             jw.write('Temp/candidates.json', candidates_)
         elif command == 'clear':
             matchmaker.candidates = []
@@ -70,13 +115,13 @@ def find_candidates_2(session, matchmaker, db, card, log=None):
 
     #  Эта часть только для лога и json-а.
     candidates = matchmaker.get_candidates(cut=False)
-    if log: log.log(f"Main -> Подобрано {len(candidates)} кандидатов.")
+    if log: log.log(f"Main -> Осталось {len(candidates)} кандидатов.")
     jw.write('Temp/allcandidates.json', candidates)
 
     return
 
 
-TEST = False
+TEST = True
 
 if __name__ == '__main__':
     print(f'{"НАЧАЛО РАБОТЫ ПРОГРАММЫ":*^31}')
@@ -120,6 +165,6 @@ if __name__ == '__main__':
     matchmaker = mm.Matchmaker(session, db, card, log, TEST)
 
     #  Запускаем примитивный интерфейс через принты и инпуты
-    find_candidates_2(session=session, matchmaker=matchmaker, db=db, card=card, log=log)
+    find_candidates(session=session, db=db, matchmaker=matchmaker, card=card, log=log)
 
     print(f'{"КОНЕЦ РАБОТЫ ПРОГРАММЫ":*^31}')

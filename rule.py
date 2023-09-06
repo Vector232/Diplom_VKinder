@@ -2,7 +2,7 @@
 import random
 
 def rule(age, sex):
-    query = 'ЁЙЦУКЕНГШЩЗХФЫВАПРОЛДЖЭЯЧСМИТБЮQWERTYUIOPASDFGHJKLZXCVBNM '
+    query = 'ЁЦУКЕНГШЩЗХФЫВАПРОЛДЖЭЯЧСМИТБЮWERTYUIOPASDFGHJKLZXCVBNM '
 
     fields = {  'q': random.sample(query, 1),
                 'sex': sex,

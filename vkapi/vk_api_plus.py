@@ -62,7 +62,8 @@ class VK_session:
             except: 
                 print(f'{data}')
                 raise
-            return sorted_dict[1:4]
+            # на случай если не набралось 3 фотки в профиле
+            return sorted_dict[1:4] if len(sorted_dict) > 3 else sorted_dict 
         
         if self.log: self.log.log(f"VK_API -> Создаем карточку пользователяю с ID: {id}")
         data = self.get(url=self.USERS_GET, user_id=id, fields='sex, relation, city, bdate').json()
@@ -106,6 +107,5 @@ class VK_session:
             if self.log: self.log.log(f"VK_API -> Возникла ошибочка в vk_api.get: {ex}")
         return response
     
-
     # def __del__(self):
     #     if self.log: self.log.log('Сессия завершена!')
