@@ -1,66 +1,125 @@
-import vk_api_plus as vk
-import usercardmaker as ucm
+import vkapi.vk_api_plus as vk
+import vkapi.usercardmaker as ucm
 import database.vkinderdbselect as dbselect
-import jsonwrite as jw
-import loger
+import logs.jsonwrite as jw
+import logs.loger as loger
 import matchmaker as mm
+import rule
 # это нужно будет убрать
-from database.vkinderdbmodel import *
 from pprint import pprint
 
-#  Регулирует поиск и выдачу кандидатов.
-def find_candidates(session, matchmaker, db, card, log=None):
+#  Регулирует поиск и выдачу кандидатов. Новая версия.
+def find_candidates(session, db, matchmaker, card, log=None):
     if log: log.log(f"Main -> Инициирован поиск кандидатов.")
-    
-    #  Получить прошлых кандидатов
-    # viewed = db.get_viewed(card['user_id'])
-    # print(f'Есть в БД: {viewed}')
-
-    #  Зафиксировать просмотренные профили
-    currently_viewed = {}
     candidates = {}
 
-    #  Параметры поиска. Вынес чтобы можно было менять. Правило изменения не придумал.                  Придумай!!!
-    query = ''
-    offset = 0
-    count = 50
     if card['fields']['sex'] == 1: sex = 2
     elif card['fields']['sex'] == 2: sex = 1
     else: sex = None
 
-    while True:     
-        fields = {'q': query,
-                'sort': 0,
-                'offset': offset,
-                'count': count,
-                'sex': sex,
-                'fields': 'bdate, sex, relation, city'}
+    bdate = card['fields']['bdate']
+    if bdate == None:
+        age = input('Дата рождения не указана. Укажите год рождения для качественного поиска: ')
+    else:
+        bdate = int(bdate.split(sep='.')[-1])
+        if bdate < 1902:
+            age = input("Дата рождения указана без года. Укажите год для качественного поиска: ")
+        else:
+            age = bdate
 
-        #  Запрашиваем список пре-кандидатов
-        if log: log.log(f"Main -> Запрос пре-кандидатов с параметрами: {fields}.")
-        response = session.get(url=session.USERS_SEARCH, **fields).json()
-        
-        if len(response['response']['items']) == 0: break # дописать момент с изменение параметров поиска (для обхода ограниченией в 1000 профилей на выдаче) !!!!
+    # Первый уровень меню.
+    print('\n'*50)
+    while True:
+        print(f'{"Инструкция":-^50}')
+        print(f'{"Для работы с программой введите команду.":-^50}')
+        print(f'{"Список доступных команд доступен по команде <help>.":-^50}')
+        print(f'В списке кандидатов нерассмотрены {len(matchmaker.candidates)} кандидатов.')
+        command = input("Введите команду: ")
 
-        #  Проверяем пришел ли нужный ответ
-        try:
-            pre_candidates = response['response']['items']
-        except Exception as ex:
-            print(f'Main -> Возникла ошибочка в vk_api.find_candidates: {ex}\n Ответ: {response}')
+        if command == 'help':
+            print('\n'*3)
+            print(f'{"Список доступных команд:":-^50}')
+            print(f'{"search -> найти кандидатов":-<50}')
+            print(f'{"get -> вывести десятку лучших":-<50}')
+            print(f'{"clear -> отчистить список кандидатов":-<50}')
+            print(f'{"exit -> завершить работу":-<50}')
+        elif command == 'exit':
             break
-        
-        #  Оцениваем полученных пре-кандидатов
-        matchmaker.add_and_evaluation(pre_candidates)
-        offset += count
+        elif command == 'search':
+            fields = rule.rule(age, sex)
+            if log: log.log(f"Main -> Запрос пре-кандидатов с параметрами: {fields}.")
+            #  Запрашиваем список пре-кандидатов.
+            response = session.get(url=session.USERS_SEARCH, **fields).json()
 
-    # print(currently_viewed)
-    # viewed = DB.get_users()
-    # print(f'Есть в БД после прохода: {viewed}')
+            #  Проверяем пришел ли нужный ответ
+            try:
+                pre_candidates = response['response']['items']
+            except Exception as ex:
+                print(f'Main -> Возникла ошибочка в vk_api.find_candidates: {ex}\n Ответ: {response}')
+                break
+
+            #  Оцениваем полученных пре-кандидатов
+            matchmaker.add_and_evaluation(pre_candidates)
+        elif command == 'get':
+            candidates_ = matchmaker.get_candidates()
+            # Второй уровень меню.
+            print('\n'*3)
+            while True:
+                print(f'{"Список кандидатов:"}')
+                for ind, cand in enumerate(candidates_):
+                    print(f'{ind+1}. {cand["fields"]["last_name"]} {cand["fields"]["first_name"]}:  {cand["grade"]}')
+                print(f'{"Введите номер кандидата для подробностей.":-^50}')
+                print(f'{"Введите 0 для выхода из просмотра кандидатов.":-^50}')
+
+                command = int(input("Введите команду: "))
+
+                if command == 0:
+                    break
+                elif command in [i for i in range(1,len(candidates_)+1)]:
+                    under_review = candidates_[command-1]
+                    pprint(under_review)
+                    photos = db.get_all_user_photos(under_review["fields"]["id"])
+                    for i, photo in enumerate(photos):
+                        print(f'{i+1}. {photo}')
+                    
+                    # Третий уровень меню.
+                    # тут добавление в фавор или чс, лайки фото.
+                    while True:
+                        print(f'{"Доступные действия:"}')
+                        print(f'{"ban -> навсегда исключить кандидата из рассмотрения.":-<50}')
+                        print(f'{"favor -> добавить кандидата в список избранных.":-<50}')
+                        print(f'{"like <номер> -> оценить фотографию с выбранным номером.":-<50}')
+                        print(f'{"back -> вернуться к списку кандидатов.":-<50}')
+                        command = input("Введите команду: ")
+
+                        if command == 'ban':
+                            db.push_to_balcklist(card['fields']["user_id"], under_review["fields"]["id"])
+                        elif command == 'favor':
+                            db.push_to_whitelist(card['fields']["user_id"], under_review["fields"]["id"])
+                        elif command == 'back':
+                            break
+                        else:
+                            try:
+                                com, num = command.split(sep=' ')
+                            except:
+                                continue
+                            num = int(num)
+                            if com == 'like' and num in [i for i in range(1,len(photos)+1)]:
+                                db.like_photo(card['fields']["user_id"], photos[int(num)-1][0])
+
+            jw.write('Temp/candidates.json', candidates_)
+        elif command == 'clear':
+            matchmaker.candidates = []
+
+
+
     #  Эта часть только для лога и json-а.
     candidates = matchmaker.get_candidates(cut=False)
-    if log: log.log(f"Main -> Подобрано {len(candidates)} кандидатов.")
-    jw.write('Temp/candidates.json', candidates)
-    return candidates
+    if log: log.log(f"Main -> Осталось {len(candidates)} кандидатов.")
+    jw.write('Temp/allcandidates.json', candidates)
+
+    return
+
 
 TEST = True
 
@@ -104,11 +163,8 @@ if __name__ == '__main__':
 
     #  Подрубаем искателя кандидатов.
     matchmaker = mm.Matchmaker(session, db, card, log, TEST)
-    candidates = find_candidates(session=session, matchmaker=matchmaker, db=db, card=card, log=log)
-    while input('Показать кандидатов?(y)') == 'y':
-        candidates_ = matchmaker.get_candidates()
-        for i in candidates_:
-            print(i)
-    # print(candidates)
+
+    #  Запускаем примитивный интерфейс через принты и инпуты
+    find_candidates(session=session, db=db, matchmaker=matchmaker, card=card, log=log)
 
     print(f'{"КОНЕЦ РАБОТЫ ПРОГРАММЫ":*^31}')

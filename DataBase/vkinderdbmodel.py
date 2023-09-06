@@ -7,7 +7,7 @@ class User(Base):
     __tablename__ = 'user'
 
     user_id = sq.Column(sq.Integer, primary_key=True)
-    name = sq.Column(sq.VARCHAR(length=20), nullable=False)
+    name = sq.Column(sq.VARCHAR(length=40), nullable=False)
     last_name = sq.Column(sq.VARCHAR(length=40), nullable=False)
     bdate = sq.Column(sq.VARCHAR(length=15))
     sex = sq.Column(sq.Integer)
@@ -81,6 +81,33 @@ class Output(Base):
 
     def __str__(self):
         return f'Photo_User {self.output_id}: ({self.input_user_id, self.output_user_id})'
+    
+class Blacklist(Base):
+    __tablename__ = 'blacklist'
+
+    blacklist_id = sq.Column(sq.Integer, primary_key=True)
+    owner_user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
+    banned_user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
+
+    owner_user = relationship(User, foreign_keys=[owner_user_id])
+    banned_user = relationship(User, foreign_keys=[banned_user_id])
+
+    def __str__(self):
+        return f'Photo_User {self.blacklist_id}: ({self.owner_user_id, self.banned_user_id})'
+    
+class Whitelist(Base):
+    __tablename__ = 'whitelist'
+
+    whitelist_id = sq.Column(sq.Integer, primary_key=True)
+    owner_user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
+    favor_user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'), nullable=False)
+
+    owner_user = relationship(User, foreign_keys=[owner_user_id])
+    favor_user = relationship(User, foreign_keys=[favor_user_id])
+
+    def __str__(self):
+        return f'Photo_User {self.whitelist_id}: ({self.owner_user_id, self.favor_user})'
+
 
 def create_tables(engine):
     Base.metadata.drop_all(engine)

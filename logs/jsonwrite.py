@@ -11,6 +11,9 @@ def write(f_name, data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 def read(f_name):
-    with open(f_name, 'r',  encoding='utf-8') as f:
-        data = json.load(f)
+    try:
+        with open(f_name, 'r',  encoding='utf-8') as f:
+            data = json.load(f)
+    except:
+        data = []
     return data

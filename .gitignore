@@ -1,6 +1,5 @@
-Servise
-Temp
+Temp/*
 __pycache__
 .env
 .pyc
-idias.txt
+test.py

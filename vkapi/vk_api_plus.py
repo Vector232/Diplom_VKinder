@@ -6,9 +6,9 @@ import time
 
 #  Самодельные модули с нужным функционалом
 #  Логер. Спасибо Кэп.
-from loger import Loger
+from logs.loger import Loger
 #  Работа с json файлами
-import jsonwrite as jw
+import logs.jsonwrite as jw
 #  Получение токена вк
 from vkapi.gettoken import get_token
 
@@ -59,18 +59,24 @@ class VK_session:
         def take_top3_photo(data):
             try:
                 sorted_dict = sorted(data['response']['items'], key=lambda x: -x['likes']['count'] - x['comments']['count'])
-            except: # Возникает только в тестовом режиме при неактуальном токене. Надеюсь.
-                print(f'Обнови токен в .env!')
+            except: 
+                print(f'{data}')
                 raise
-            return sorted_dict[1:4]
+            # на случай если не набралось 3 фотки в профиле
+            return sorted_dict[1:4] if len(sorted_dict) > 3 else sorted_dict 
         
         if self.log: self.log.log(f"VK_API -> Создаем карточку пользователяю с ID: {id}")
         data = self.get(url=self.USERS_GET, user_id=id, fields='sex, relation, city, bdate').json()
 
         if get_photo: 
-            # фото берем из альбома с фото профиля
-            data['photo'] = take_top3_photo(self.get(url=self.PHOTO_GET, owner_id=id, album_id='profile', extended=1).json())
-            # получаем фото на которых пользователь был отмечен
+            #  Фото берем из альбома с фото профиля.
+            untested_data = self.get(url=self.PHOTO_GET, owner_id=id, album_id='profile', extended=1).json()
+            #  Если не приватный.
+            if untested_data.get('error'): return data
+
+            data['photo'] = take_top3_photo(untested_data)
+            
+            #  Получаем фото на которых пользователь был отмечен
             sub_data = self.get(url=self.PHOTO_GETUSERPHOTOS, user_id=id).json()
             if sub_data.get('response', False):
                 data['was_noted'] = sub_data['response']
@@ -87,7 +93,7 @@ class VK_session:
     #  Только в тестовом ломается из-за неактуального токена.
     #  По идее невозможно в рабочем режиме. 
     def get(self, url, **kwargs):
-        if self.log: self.log.log(f"Запрос к ППО ВК: {url}: ({kwargs})")
+        if self.log: self.log.log(f"VK_API -> Запрос к ППИ ВК: {url}: ({kwargs})")
         params = {'access_token': self.access_token, 
                     'v': self.VERSION,
                     **kwargs
@@ -95,12 +101,11 @@ class VK_session:
         try:
             response = requests.get(url=url, params=params)
             time.sleep(0.3)
-            if self.log: self.log.log(f"VK_API -> Ответ от ППО ВК: {response}")
+            if self.log: self.log.log(f"VK_API -> Ответ от ППИ ВК: {response}")
         except Exception as ex:
             print(f'Возникла ошибочка в vk_api.get: {ex}')
             if self.log: self.log.log(f"VK_API -> Возникла ошибочка в vk_api.get: {ex}")
         return response
     
-
     # def __del__(self):
     #     if self.log: self.log.log('Сессия завершена!')
