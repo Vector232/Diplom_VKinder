@@ -53,12 +53,15 @@ def makeusercard(info: dict, get_photo = False) -> dict:
             photo['fields']['user_id'] = source.get("id", None) #  ID не владельца фото, а тегнутого пользователя!
             photo['fields']['photo_id'] = photo_tags.get('id', None)
             
-            url = max(photo_tags["sizes"], key=lambda x: x['height'] * x['width'])["url"] # подумать о переносе в другое место
+            url = max(photo_tags["sizes"], key=lambda x: x['height'] * x['width'])["url"] # подумать о переносе в другое место, выбирает только фото смаксимальным разрешением
             photo['fields']['url'] = url
 
             data.append(photo)
         return data
 
+    if info == None: 
+        if get_photo: return None, None, None
+        return None
 
     best_data = make_user_info(info)
     

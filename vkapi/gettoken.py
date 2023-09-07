@@ -11,10 +11,8 @@ def get_token(client_id):
     token = None
     id = None
     
-    
     driver = webdriver.Edge()
         
-  
     try:
         driver.maximize_window()
         driver.get(f'https://oauth.vk.com/authorize?client_id={client_id}&display=page&scope=photos&response_type=token&v=5.131')

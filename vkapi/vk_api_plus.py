@@ -52,9 +52,15 @@ class VK_session:
             except:
                 if self.log: self.log.log("VK_API -> Неудачная попытка получения токена.")
                 print('Нудалось получить токен! Проверьте правильность введенных логина и/или пароля!')
+                if input("Введите <break> для завершения работы программы: ") == 'break':
+                    (self.access_token, self.user_id) = None, None
+                    break
 
     
     def get_user_info(self, id, get_photo=False):
+        #  На случай непредвиденных обстоятельств.
+        if id == None: return None
+
         # получаем только три топовые фотографии
         def take_top3_photo(data):
             try:

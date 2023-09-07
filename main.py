@@ -9,7 +9,7 @@ import rule
 from pprint import pprint
 
 #  Регулирует поиск и выдачу кандидатов. Новая версия.
-def find_candidates(session, db, matchmaker, card, log=None):
+def start_ui(session, db, matchmaker, card, log=None):
     if log: log.log(f"Main -> Инициирован поиск кандидатов.")
     candidates = {}
 
@@ -121,7 +121,7 @@ def find_candidates(session, db, matchmaker, card, log=None):
     return
 
 
-TEST = True
+TEST = False
 
 if __name__ == '__main__':
     print(f'{"НАЧАЛО РАБОТЫ ПРОГРАММЫ":*^31}')
@@ -147,24 +147,24 @@ if __name__ == '__main__':
     #     print(photo)
     # print(was_noted)
     
-   
-    db.push(card)
-    for photo in photos:
-        db.push(photo)
-    for photo in was_noted:
-        db.push(photo)
+    if card != None:
+        db.push(card)
+        for photo in photos:
+            db.push(photo)
+        for photo in was_noted:
+            db.push(photo)
 
-    # q = db.session.query(User)
-    # for i in q:
-    #     print(i)
-    # q = db.session.query(Photo)
-    # for i in q:
-    #     print(i)
+        # q = db.session.query(User)
+        # for i in q:
+        #     print(i)
+        # q = db.session.query(Photo)
+        # for i in q:
+        #     print(i)
 
-    #  Подрубаем искателя кандидатов.
-    matchmaker = mm.Matchmaker(session, db, card, log, TEST)
+        #  Подрубаем искателя кандидатов.
+        matchmaker = mm.Matchmaker(session, db, card, log, TEST)
 
-    #  Запускаем примитивный интерфейс через принты и инпуты
-    find_candidates(session=session, db=db, matchmaker=matchmaker, card=card, log=log)
+        #  Запускаем примитивный интерфейс через принты и инпуты
+        start_ui(session=session, db=db, matchmaker=matchmaker, card=card, log=log)
 
     print(f'{"КОНЕЦ РАБОТЫ ПРОГРАММЫ":*^31}')

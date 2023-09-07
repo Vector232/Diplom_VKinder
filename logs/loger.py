@@ -10,6 +10,3 @@ class Loger:
         self.operive_time = datetime.now() - self.start_data
         with open('Temp/log.txt', 'a', encoding='utf-8') as f:
             f.write(f'{self.operive_time}: {data}\n')
-
-    # def __del__(self):
-    #     self.log('Loger завершил работу!')
