@@ -4,7 +4,7 @@ def write(f_name, data):
     if not isinstance(data, (dict, list)):
         try:
             data.json()
-        except:
+        except Exception:
             print('Ошибка в преобразовании типа данных!')
             
     with open(f_name, 'w',  encoding='utf-8') as f:
@@ -14,6 +14,7 @@ def read(f_name):
     try:
         with open(f_name, 'r',  encoding='utf-8') as f:
             data = json.load(f)
-    except:
+    except Exception:
+        print(f'Не удалость прочесть {f_name}')
         data = []
     return data

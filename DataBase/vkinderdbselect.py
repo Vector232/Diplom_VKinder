@@ -28,48 +28,59 @@ class DateBase:
         DSN = load_dsn()
         engine = sqlalchemy.create_engine(DSN)
 
-        if new: create_tables(engine)
+        if new:
+            create_tables(engine)
 
         Session = sessionmaker(bind=engine)
         self.session = Session()
         self.log = loger
-        if self.log: self.log.log(f'DB -> База данных создана.')
+        if self.log: 
+            self.log.log('DB -> База данных создана.')
     
     # для дальнейшей стандартизации                                         ВСЕ ПЕРЕДЕЛАТЬ! РАЗДЕЛИТЬ! РАЗНЫЕ ВСТАВКИ - РАЗНЫЕ МЕТОДЫ!
     # все добавления в БД должны будут использлвать только этот метод
     def push(self, data: dict):
         def add_user():
             if self.session.query(User.user_id).where(User.user_id == data['fields']['user_id']).first():
-                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['user_id']} в User.")
+                if self.log: 
+                    self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['user_id']} в User.")
             else:
                 self.session.add(model(**data.get('fields')))
                 
         def add_photo():
             if self.session.query(Photo.photo_id).where(Photo.photo_id == data['fields']['photo_id']).first():
-                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
+                if self.log: 
+                    self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
             else:
                 self.session.add(model(photo_id=data['fields']['photo_id'], url=data['fields']['url']))
-                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo.")
+                if self.log: 
+                    self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo.")
             #  При создании фото, создается и связь фото с пользователем. 
             if self.session.query(Photo_User.photo_id).where(Photo_User.photo_id == data['fields']['photo_id']
                                                              and Photo_User.user_id == data['fields']['user_id']).first():
-                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo_User.")
+                if self.log: 
+                    self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo_User.")
             else:
                 self.session.add(Photo_User(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id']))
-                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} и {data['fields']['user_id']} в Photo_User.")
+                if self.log: 
+                    self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} и {data['fields']['user_id']} в Photo_User.")
         
         def add_photo_with_user():
             if self.session.query(Photo.photo_id).where(Photo.photo_id == data['fields']['photo_id']).first():
-                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
+                if self.log: 
+                    self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} в Photo.")
             else:
                 self.session.add(Photo(photo_id=data['fields']['photo_id'], url=data['fields']['url']))
-                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo.")
+                if self.log: 
+                    self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo.")
             #  При создании фото c пользователем, создается отдельная запись без привязки к владельца фото.
             if self.session.query(Photo_With_User.photo_id).where(Photo_With_User.photo_id == data['fields']['photo_id'] 
                                                                       and Photo_With_User.user_id == data['fields']['user_id']).first():
-                if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} и {data['fields']['user_id']} в Photo_With_User.")
+                if self.log:
+                    self.log.log(f"DB -> База данных уже содержит запись с ID:{data['fields']['photo_id']} и {data['fields']['user_id']} в Photo_With_User.")
             else:
-                if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo_With_User.")
+                if self.log: 
+                    self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo_With_User.")
                 self.session.add(model(photo_id=data['fields']['photo_id'], user_id=data['fields']['user_id']))
 
         model = {'user': User,
@@ -95,26 +106,32 @@ class DateBase:
 
     def like_photo(self, user_id, photo_id):
         if self.session.query(Like.like_id).where(Like.photo_id == photo_id and Like.user_id == user_id).first():
-            if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{user_id} и {photo_id} в Like.")
+            if self.log: 
+                self.log.log(f"DB -> База данных уже содержит запись с ID:{user_id} и {photo_id} в Like.")
         else:
             self.session.add(Like(photo_id=photo_id, user_id=user_id))
-            if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{user_id} и {photo_id} в Like.")
+            if self.log: 
+                self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{user_id} и {photo_id} в Like.")
             self.session.commit()
 
     def push_to_balcklist(self, owner_id, banned_id):
         if self.session.query(Blacklist.blacklist_id).where(Blacklist.owner_user_id == owner_id and Blacklist.banned_user_id == banned_id).first():
-            if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{owner_id} и {banned_id} в Blacklist.")
+            if self.log: 
+                self.log.log(f"DB -> База данных уже содержит запись с ID:{owner_id} и {banned_id} в Blacklist.")
         else:
             self.session.add(Blacklist(owner_user_id=owner_id, banned_user_id=banned_id))
-            if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{owner_id} и {banned_id} в Blacklist.")
+            if self.log: 
+                self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{owner_id} и {banned_id} в Blacklist.")
             self.session.commit()
 
     def push_to_whitelist(self, owner_id, favor_id):
         if self.session.query(Whitelist.whitelist_id).where(Whitelist.owner_user_id == owner_id and Whitelist.favor_user_id == favor_id).first():
-            if self.log: self.log.log(f"DB -> База данных уже содержит запись с ID:{owner_id} и {favor_id} в Whitelist.")
+            if self.log: 
+                self.log.log(f"DB -> База данных уже содержит запись с ID:{owner_id} и {favor_id} в Whitelist.")
         else:
             self.session.add(Whitelist(owner_user_id=owner_id, favor_user_id=favor_id))
-            if self.log: self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{owner_id} и {favor_id} в Whitelist.")
+            if self.log:
+                self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{owner_id} и {favor_id} в Whitelist.")
             self.session.commit()
 
     def get_all_user_photos(self, id):

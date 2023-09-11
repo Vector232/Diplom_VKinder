@@ -10,15 +10,19 @@ from pprint import pprint
 
 #  Регулирует поиск и выдачу кандидатов. Новая версия.
 def start_ui(session, db, matchmaker, card, log=None):
-    if log: log.log(f"Main -> Инициирован поиск кандидатов.")
+    if log:
+        log.log("Main -> Инициирован поиск кандидатов.")
     candidates = {}
 
-    if card['fields']['sex'] == 1: sex = 2
-    elif card['fields']['sex'] == 2: sex = 1
-    else: sex = None
+    if card['fields']['sex'] == 1: 
+        sex = 2
+    elif card['fields']['sex'] == 2: 
+        sex = 1
+    else:
+        sex = None
 
     bdate = card['fields']['bdate']
-    if bdate == None:
+    if bdate is None:
         age = input('Дата рождения не указана. Укажите год рождения для качественного поиска: ')
     else:
         bdate = int(bdate.split(sep='.')[-1])
@@ -47,7 +51,8 @@ def start_ui(session, db, matchmaker, card, log=None):
             break
         elif command == 'search':
             fields = rule.rule(age, sex)
-            if log: log.log(f"Main -> Запрос пре-кандидатов с параметрами: {fields}.")
+            if log:
+                log.log(f"Main -> Запрос пре-кандидатов с параметрами: {fields}.")
             #  Запрашиваем список пре-кандидатов.
             response = session.get(url=session.USERS_SEARCH, **fields).json()
 
@@ -101,7 +106,9 @@ def start_ui(session, db, matchmaker, card, log=None):
                         else:
                             try:
                                 com, num = command.split(sep=' ')
-                            except:
+                            except Exception as ex:
+                                if log: 
+                                    log.log(f"Main -> Exception: {ex}")
                                 continue
                             num = int(num)
                             if com == 'like' and num in [i for i in range(1,len(photos)+1)]:
@@ -115,7 +122,8 @@ def start_ui(session, db, matchmaker, card, log=None):
 
     #  Эта часть только для лога и json-а.
     candidates = matchmaker.get_candidates(cut=False)
-    if log: log.log(f"Main -> Осталось {len(candidates)} кандидатов.")
+    if log: 
+        log.log(f"Main -> Осталось {len(candidates)} кандидатов.")
     jw.write('Temp/allcandidates.json', candidates)
 
     return
@@ -147,7 +155,7 @@ if __name__ == '__main__':
     #     print(photo)
     # print(was_noted)
     
-    if card != None:
+    if card is not None:
         db.push(card)
         for photo in photos:
             db.push(photo)

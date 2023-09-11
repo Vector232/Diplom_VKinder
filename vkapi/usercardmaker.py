@@ -2,8 +2,10 @@
 def makeusercard(info: dict, get_photo = False) -> dict:
     def make_user_info(info):
         source = info.get('response')
-        if source: source = source[0]
-        else: return {}, [], []
+        if source:
+            source = source[0]
+        else:
+            return {}, [], []
 
         data = {}
         data['model'] = 'user'
@@ -33,7 +35,9 @@ def makeusercard(info: dict, get_photo = False) -> dict:
             best_photo['fields']['user_id'] = source.get("id", None)
             best_photo['fields']['photo_id'] = photo.get('id', None)
 
-            url = max(photo["sizes"], key=lambda x: x['height'] * x['width'])["url"] # подумать о переносе в другое место
+            url = max(photo["sizes"],
+                      key=lambda x: x['height'] * x['width']
+                      )["url"]
             best_photo['fields']['url'] = url
 
             data.append(best_photo)
@@ -50,23 +54,28 @@ def makeusercard(info: dict, get_photo = False) -> dict:
             photo = {}
             photo['model'] = 'photo_with_user'
             photo['fields'] = {}
-            photo['fields']['user_id'] = source.get("id", None) #  ID не владельца фото, а тегнутого пользователя!
+            #  ID не владельца фото, а тегнутого пользователя!
+            photo['fields']['user_id'] = source.get("id", None)
             photo['fields']['photo_id'] = photo_tags.get('id', None)
-            
-            url = max(photo_tags["sizes"], key=lambda x: x['height'] * x['width'])["url"] # подумать о переносе в другое место, выбирает только фото смаксимальным разрешением
+
+            url = max(photo_tags["sizes"], 
+                      key=lambda x: x['height'] * x['width']
+                      )["url"] 
             photo['fields']['url'] = url
 
             data.append(photo)
         return data
 
-    if info == None: 
-        if get_photo: return None, None, None
+    if info is None: 
+        if get_photo:
+            return None, None, None
         return None
 
     best_data = make_user_info(info)
     
     # если фото не просили, то закругляемся
-    if not get_photo: return best_data
+    if not get_photo:
+        return best_data
 
     best_photos = make_user_photo(info)
     
