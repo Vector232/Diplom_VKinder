@@ -13,8 +13,11 @@ from vkapi.gettoken import get_token
 
 
 class VK_session:
+    """
+    Аналог vk_api но только самописный и только с нужным функционалом.
+    """
     # test - определяет режим работы. True: Тестовый берет данные из окружения.
-    def __init__(self, loger: Loger = None, test = False):  
+    def __init__(self, loger: Loger = None, test = False):
         load_dotenv()
 
         self.log = loger

@@ -1,6 +1,15 @@
-# заполняет крточку пользователя
-def makeusercard(info: dict, get_photo = False) -> dict:
+def makeusercard(info: dict, get_photo: bool = False) -> dict:
+    """
+    Заполняет карточку пользователя:
+    ---
+    info - сырая информация по пользователю
+    get_photo - нужно ли оформлять в карточке пользователя раздел с фото
+    ---
+    """
+
     def make_user_info(info):
+        """Заполняет основную часть карточки."""
+
         source = info.get('response')
         if source:
             source = source[0]
@@ -24,6 +33,10 @@ def makeusercard(info: dict, get_photo = False) -> dict:
         return data
 
     def make_user_photo(info):
+        """
+        Заполняет часть карточки с фото пользователя.
+        """
+
         source = info.get('response')[0]
         photos = info.get('photo', [])
 
@@ -44,6 +57,11 @@ def makeusercard(info: dict, get_photo = False) -> dict:
         return data
     
     def make_user_noted(info):
+        """
+        Заполняет часть карточки с фото на которых
+        отмечен пользователь.
+        """
+
         source = info.get('response')[0]
         photos_tags = info.get('was_noted', [])
         if photos_tags != []:
@@ -66,6 +84,7 @@ def makeusercard(info: dict, get_photo = False) -> dict:
             data.append(photo)
         return data
 
+    # На случай непредвиденных обстоятельств.
     if info is None: 
         if get_photo:
             return None, None, None
@@ -73,7 +92,7 @@ def makeusercard(info: dict, get_photo = False) -> dict:
 
     best_data = make_user_info(info)
     
-    # если фото не просили, то закругляемся
+    # Если фото не просили, то закругляемся.
     if not get_photo:
         return best_data
 

@@ -1,7 +1,7 @@
 import json
 
 def write(f_name, data):
-    if not isinstance(data, (dict, list)):
+    if not isinstance(data, dict | list):
         try:
             data.json()
         except Exception:
@@ -12,7 +12,7 @@ def write(f_name, data):
 
 def read(f_name):
     try:
-        with open(f_name, 'r',  encoding='utf-8') as f:
+        with open(f_name,  encoding='utf-8') as f:
             data = json.load(f)
     except Exception:
         print(f'Не удалость прочесть {f_name}')

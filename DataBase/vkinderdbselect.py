@@ -37,8 +37,8 @@ class DateBase:
         if self.log: 
             self.log.log('DB -> База данных создана.')
     
-    # для дальнейшей стандартизации                                         ВСЕ ПЕРЕДЕЛАТЬ! РАЗДЕЛИТЬ! РАЗНЫЕ ВСТАВКИ - РАЗНЫЕ МЕТОДЫ!
-    # все добавления в БД должны будут использлвать только этот метод
+    
+    # Внесение новой иноформации в БД.
     def push(self, data: dict):
         def add_user():
             if self.session.query(User.user_id).where(User.user_id == data['fields']['user_id']).first():
@@ -73,7 +73,7 @@ class DateBase:
                 self.session.add(Photo(photo_id=data['fields']['photo_id'], url=data['fields']['url']))
                 if self.log: 
                     self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{data['fields']['photo_id']} в Photo.")
-            #  При создании фото c пользователем, создается отдельная запись без привязки к владельца фото.
+            #  При создании фото c пользователем, создается отдельная запись без привязки к владельцу фото.
             if self.session.query(Photo_With_User.photo_id).where(Photo_With_User.photo_id == data['fields']['photo_id'] 
                                                                       and Photo_With_User.user_id == data['fields']['user_id']).first():
                 if self.log:
@@ -88,21 +88,18 @@ class DateBase:
                     'photo_user': Photo_User,
                     'like': Like,
                     'output': Output,
-                    'photo_with_user': Photo_With_User}[data.get('model')] #  Кажется уже ненужной. Пусть пока будет.
+                    'photo_with_user': Photo_With_User}[data.get('model')]
         
         if model is Photo:
             add_photo()
         elif model is Photo_With_User:
             add_photo_with_user()
         elif model is User:
-            add_user()  
-        else: #  Добавить проверок на User чтобы не было коллизий.                !!!!
+            add_user()  # Вероятно возникновение коллизии.
+        else: 
             self.session.add(model(**data.get('fields')))
         self.session.commit()
-    # для дальнейшей стандартизации
-    # все простые запросы к БД должны будут использлвать только этот метод
-    def get():
-        pass
+   
 
     def like_photo(self, user_id, photo_id):
         if self.session.query(Like.like_id).where(Like.photo_id == photo_id and Like.user_id == user_id).first():
@@ -113,6 +110,7 @@ class DateBase:
             if self.log: 
                 self.log.log(f"DB -> В базу данных добавлена запись запись с ID:{user_id} и {photo_id} в Like.")
             self.session.commit()
+
 
     def push_to_balcklist(self, owner_id, banned_id):
         if self.session.query(Blacklist.blacklist_id).where(Blacklist.owner_user_id == owner_id and Blacklist.banned_user_id == banned_id).first():

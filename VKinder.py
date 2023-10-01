@@ -3,9 +3,10 @@ import vkapi.usercardmaker as ucm
 import database.vkinderdbselect as dbselect
 import logs.jsonwrite as jw
 import logs.loger as loger
-import matchmaker as mm
-import rule
-# это нужно будет убрать
+import vkapi.matchmaker as mm
+import vkapi.rule as rule
+
+
 from pprint import pprint
 
 #  Регулирует поиск и выдачу кандидатов. Новая версия.
@@ -91,10 +92,10 @@ def start_ui(session, db, matchmaker, card, log=None):
                     # тут добавление в фавор или чс, лайки фото.
                     while True:
                         print(f'{"Доступные действия:"}')
-                        print(f'{"ban -> навсегда исключить кандидата из рассмотрения.":-<50}')
-                        print(f'{"favor -> добавить кандидата в список избранных.":-<50}')
-                        print(f'{"like <номер> -> оценить фотографию с выбранным номером.":-<50}')
-                        print(f'{"back -> вернуться к списку кандидатов.":-<50}')
+                        print(f'{"ban -> навсегда исключить кандидата из рассмотрения.":-<60}')
+                        print(f'{"favor -> добавить кандидата в список избранных.":-<60}')
+                        print(f'{"like <номер> -> оценить фотографию с выбранным номером.":-<60}')
+                        print(f'{"back -> вернуться к списку кандидатов.":-<60}')
                         command = input("Введите команду: ")
 
                         if command == 'ban':
@@ -114,7 +115,7 @@ def start_ui(session, db, matchmaker, card, log=None):
                             if com == 'like' and num in [i for i in range(1,len(photos)+1)]:
                                 db.like_photo(card['fields']["user_id"], photos[int(num)-1][0])
 
-            jw.write('Temp/candidates.json', candidates_)
+            jw.write('temp/candidates.json', candidates_)
         elif command == 'clear':
             matchmaker.candidates = []
 
@@ -124,7 +125,7 @@ def start_ui(session, db, matchmaker, card, log=None):
     candidates = matchmaker.get_candidates(cut=False)
     if log: 
         log.log(f"Main -> Осталось {len(candidates)} кандидатов.")
-    jw.write('Temp/allcandidates.json', candidates)
+    jw.write('temp/allcandidates.json', candidates)
 
     return
 

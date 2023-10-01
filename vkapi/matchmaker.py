@@ -12,14 +12,19 @@ from logs.loger import Loger
 import vkapi.usercardmaker as ucm
 import logs.jsonwrite as jw
 
-class Matchmaker():
+class Matchmaker:
+    """
+    Отвечает за фильтрацию прекандидатов.
+    """
     def __init__(self, session, db, card, log: Loger = None, test = False) -> None: # полностью результат usercardmaker-а
         self.log = log
+
         if self.log: 
             self.log.log("Matchmaker -> Matchmaker инициирован!")
+
         self.db = db
         self.session = session
-        self.candidates = jw.read('Temp/allcandidates.json')
+        self.candidates = jw.read('temp/allcandidates.json')
         #  Просмотренные в текущей сессии не будут рассматриваться в ней повторно.
         self.viewed = {}
 
@@ -43,6 +48,7 @@ class Matchmaker():
 
         if self.log: 
             self.log.log(f"Matchmaker -> Matchmaker рассматривает {len(precandidate_pool)} пре-кандидатов.")
+
         for precandidat in precandidate_pool:
             #  Проверка на черный список и повторное вхождение в сессию.
             pc_id = precandidat.get('id')

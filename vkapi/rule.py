@@ -8,7 +8,8 @@ def rule(age, sex):
                 'sex': sex,
                 'fields': 'bdate, sex, relation, city',
                 'age_from': age - 6,
-                'age_to': age + 6}
+                'age_to': age + 6,
+            }
     
     return fields
 
